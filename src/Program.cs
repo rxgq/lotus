@@ -1,4 +1,4 @@
-namespace lotus;
+namespace lotus.src;
 
 static class Program
 {
@@ -7,5 +7,5 @@ static class Program
     {
         ApplicationConfiguration.Initialize();
         Application.Run(new DashboardForm());
-    }    
+    }
 }
