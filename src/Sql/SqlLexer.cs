@@ -21,6 +21,7 @@ public sealed class SqlLexer(string source)
         { "insert", SqlTokenType.Insert },
         { "into", SqlTokenType.Into },
         { "values", SqlTokenType.Values },
+        { "drop", SqlTokenType.Drop },
     };
 
     public List<SqlToken> Tokenize()

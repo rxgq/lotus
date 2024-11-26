@@ -9,6 +9,7 @@ public enum SqlTokenType
     Insert,
     Into,
     Values,
+    Drop,
     Star,
     Comma,
     SingleQuote,

@@ -27,6 +27,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
             SqlTokenType.From => ParseFromStmt(),
             SqlTokenType.Create => ParseFromCreateStmt(),
             SqlTokenType.Insert => ParseInsertStmt(),
+            SqlTokenType.Drop => ParseDropTable(),
             _ => new BadStatement(Tokens[Current].Literal)
         };
 
@@ -134,6 +135,16 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Expect(SqlTokenType.RightParen);
 
         return new(tableName, columns, values);
+    }
+
+    private DropTableStatement ParseDropTable() 
+    {
+        Expect(SqlTokenType.Drop);
+        Expect(SqlTokenType.Table);
+
+        var identifier = Tokens[Current].Literal;
+
+        return new(identifier);
     }
 
     private bool Expect(SqlTokenType type) {

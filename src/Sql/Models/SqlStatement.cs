@@ -36,6 +36,11 @@ public sealed class InsertStatement(string tableName, List<string> columns, List
     public List<SqlToken> Values { get; set; } = values;
 }
 
+public sealed class DropTableStatement(string tableName) : SqlStatement
+{
+    public string TableName { get; set; } = tableName;
+}
+
 public sealed class BadStatement(string literal) : SqlStatement
 {
     public string Literal { get; set; } = literal;

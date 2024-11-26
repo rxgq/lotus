@@ -34,6 +34,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             _ when stmt is SelectStatement select => ExecuteSelectStmt(select),
             _ when stmt is CreateTableStatement create => ExecuteCreateTableStmt(create),
             _ when stmt is InsertStatement insert => ExecuteInsertStmt(insert),
+            _ when stmt is DropTableStatement drop => ExecuteDropTableStmt(drop),
             _ => null
         };
 
@@ -90,7 +91,6 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         );
     }
 
-    // insert into flowers (flower_name, flower_count) values ('daffodil', 1)
     private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertStatement insertStmt)
     {
         var table = GetTable(insertStmt.TableName);
@@ -110,6 +110,24 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         table.Rows.Add(dbRow);
 
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
+    }
+
+    private QueryResult<List<DatabaseRow>> ExecuteDropTableStmt(DropTableStatement dropStmt)
+    {
+        var table = GetTable(dropStmt.TableName);
+        if (table is null) { 
+            return QueryResult<List<DatabaseRow>>.Err($"table '{dropStmt.TableName}' does not exist.");
+        }
+
+        var tableAffected = new DatabaseTable() {
+            Columns = [],
+            Name = table.Name,
+            Rows= []
+        };
+
+        Tables.Remove(table);
+
+        return QueryResult<List<DatabaseRow>>.Ok(tableAffected: tableAffected);
     }
 
     private DatabaseTable? GetTable(string name) 
