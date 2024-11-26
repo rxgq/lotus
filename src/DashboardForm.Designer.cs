@@ -17,6 +17,7 @@ partial class DashboardForm
 
     private void InitializeComponent()
     {
+        DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
         menuStrip1 = new MenuStrip();
         QueryEditorField = new RichTextBox();
         ExecuteQueryButton = new Button();
@@ -37,28 +38,30 @@ partial class DashboardForm
         menuStrip1.ImageScalingSize = new Size(28, 28);
         menuStrip1.Location = new Point(0, 0);
         menuStrip1.Name = "menuStrip1";
-        menuStrip1.Size = new Size(1123, 24);
+        menuStrip1.Size = new Size(1353, 24);
         menuStrip1.TabIndex = 0;
         menuStrip1.Text = "menuStrip1";
         // 
         // QueryEditorField
         // 
+        QueryEditorField.Font = new Font("Consolas", 9F);
         QueryEditorField.Location = new Point(363, 89);
         QueryEditorField.Name = "QueryEditorField";
-        QueryEditorField.Size = new Size(748, 268);
+        QueryEditorField.Size = new Size(971, 289);
         QueryEditorField.TabIndex = 1;
         QueryEditorField.Text = "";
         QueryEditorField.TextChanged += QueryEditorField_TextChanged;
-        QueryEditorField.SelectionIndent = 10;
-        QueryEditorField.SelectionRightIndent = 10;
+        QueryEditorField.SelectionIndent = 16;
+        QueryEditorField.SelectionRightIndent = 16;
+
         // 
         // ExecuteQueryButton
         // 
         ExecuteQueryButton.Location = new Point(363, 43);
         ExecuteQueryButton.Name = "ExecuteQueryButton";
-        ExecuteQueryButton.Size = new Size(166, 40);
+        ExecuteQueryButton.Size = new Size(150, 40);
         ExecuteQueryButton.TabIndex = 2;
-        ExecuteQueryButton.Text = "Execute Query";
+        ExecuteQueryButton.Text = "Execute";
         ExecuteQueryButton.UseVisualStyleBackColor = true;
         ExecuteQueryButton.Click += ExecuteQueryButton_Click;
         // 
@@ -66,7 +69,7 @@ partial class DashboardForm
         // 
         DashboardTreeView.Location = new Point(12, 43);
         DashboardTreeView.Name = "DashboardTreeView";
-        DashboardTreeView.Size = new Size(333, 577);
+        DashboardTreeView.Size = new Size(333, 642);
         DashboardTreeView.TabIndex = 0;
         // 
         // QueryResultTab
@@ -76,7 +79,7 @@ partial class DashboardForm
         QueryResultTab.Location = new Point(363, 384);
         QueryResultTab.Name = "QueryResultTab";
         QueryResultTab.SelectedIndex = 0;
-        QueryResultTab.Size = new Size(748, 230);
+        QueryResultTab.Size = new Size(978, 301);
         QueryResultTab.TabIndex = 0;
         // 
         // QueryResultTabGrid
@@ -84,7 +87,7 @@ partial class DashboardForm
         QueryResultTabGrid.Controls.Add(QueryResultGrid);
         QueryResultTabGrid.Location = new Point(4, 39);
         QueryResultTabGrid.Name = "QueryResultTabGrid";
-        QueryResultTabGrid.Size = new Size(740, 187);
+        QueryResultTabGrid.Size = new Size(970, 258);
         QueryResultTabGrid.TabIndex = 0;
         QueryResultTabGrid.Text = "Query Result";
         QueryResultTabGrid.UseVisualStyleBackColor = true;
@@ -92,10 +95,18 @@ partial class DashboardForm
         // QueryResultGrid
         // 
         QueryResultGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+        dataGridViewCellStyle2.BackColor = SystemColors.Window;
+        dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
+        dataGridViewCellStyle2.ForeColor = SystemColors.ControlText;
+        dataGridViewCellStyle2.SelectionBackColor = Color.LightBlue;
+        dataGridViewCellStyle2.SelectionForeColor = Color.Black;
+        dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+        QueryResultGrid.DefaultCellStyle = dataGridViewCellStyle2;
         QueryResultGrid.Location = new Point(4, 0);
         QueryResultGrid.Name = "QueryResultGrid";
         QueryResultGrid.RowHeadersWidth = 72;
-        QueryResultGrid.Size = new Size(733, 181);
+        QueryResultGrid.Size = new Size(963, 255);
         QueryResultGrid.TabIndex = 3;
         // 
         // QueryResultTabMessages
@@ -103,7 +114,7 @@ partial class DashboardForm
         QueryResultTabMessages.Controls.Add(QueryResultTabMessagesLabel);
         QueryResultTabMessages.Location = new Point(4, 39);
         QueryResultTabMessages.Name = "QueryResultTabMessages";
-        QueryResultTabMessages.Size = new Size(740, 187);
+        QueryResultTabMessages.Size = new Size(970, 258);
         QueryResultTabMessages.TabIndex = 0;
         QueryResultTabMessages.Text = "Messages";
         QueryResultTabMessages.UseVisualStyleBackColor = true;
@@ -120,7 +131,7 @@ partial class DashboardForm
         // 
         AutoScaleDimensions = new SizeF(12F, 30F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(1123, 632);
+        ClientSize = new Size(1353, 697);
         Controls.Add(QueryResultTab);
         Controls.Add(DashboardTreeView);
         Controls.Add(ExecuteQueryButton);

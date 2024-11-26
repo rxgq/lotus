@@ -127,7 +127,7 @@ public partial class DashboardForm : Form
 
                 foreach (var row in rows ?? [])
                 {
-                    var values = row.Values.Select(x => x.Value).ToArray();
+                    var values = row.Values.Select(x => x.Value ?? "NULL").ToArray();
                     QueryResultGrid.Rows.Add(values);
                 }
 

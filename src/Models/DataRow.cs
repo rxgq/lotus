@@ -2,5 +2,5 @@
 
 public sealed class DatabaseRow
 {
-    public required Dictionary<string, object> Values { get; set; }
+    public required Dictionary<string, object?> Values { get; set; }
 }

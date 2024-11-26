@@ -58,6 +58,10 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         {
             rows = table.Rows;
         }
+        else 
+        { 
+            // handle specific columns being selected
+        }
 
         return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: table);
     }
@@ -94,23 +98,38 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
     private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertStatement insertStmt)
     {
         var table = GetTable(insertStmt.TableName);
+        if (table is null)
+        {
+            return QueryResult<List<DatabaseRow>>.Err($"table '{insertStmt.TableName}' does not exist.");
+        }
 
-        var dbRow = new DatabaseRow() {
-            Values = []
+        var dbRow = new DatabaseRow()
+        {
+            Values = new Dictionary<string, object>()
         };
 
-        for (int i = 0; i < insertStmt.Columns.Count; i++)
-        { 
-            var column = insertStmt.Columns[i];
-            var value = insertStmt.Values[i];
+        var providedColumns = new HashSet<string>(insertStmt.Columns);
 
-            dbRow.Values.Add(column, value.Literal);
+        foreach (var column in table.Columns)
+        {
+            var columnIndex = insertStmt.Columns.IndexOf(column.Title);
+
+            if (columnIndex >= 0)
+            {
+                var value = insertStmt.Values[columnIndex];
+                dbRow.Values[column.Title] = value.Literal;
+            }
+            else
+            {
+                dbRow.Values[column.Title] = null;
+            }
         }
 
         table.Rows.Add(dbRow);
 
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
     }
+
 
     private QueryResult<List<DatabaseRow>> ExecuteDropTableStmt(DropTableStatement dropStmt)
     {
