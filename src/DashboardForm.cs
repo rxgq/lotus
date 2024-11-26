@@ -76,7 +76,8 @@ public partial class DashboardForm : Form
 
     private void RefreshTables()
     {
-        var tablesNode = DashboardTreeView.Nodes.Find("tables", false).FirstOrDefault();
+        var tablesNode = DashboardTreeView.Nodes
+            .Find("tables", false).FirstOrDefault();
 
         if (tablesNode is not null)
         {
@@ -99,9 +100,6 @@ public partial class DashboardForm : Form
 
     private void ExecuteQueryButton_Click(object sender, EventArgs e)
     {
-        QueryResultGrid.Rows.Clear();
-        QueryResultGrid.Columns.Clear();
-
         var stopwatch = new System.Diagnostics.Stopwatch();
         stopwatch.Start();
 
@@ -112,6 +110,9 @@ public partial class DashboardForm : Form
             RefreshTables();
             foreach (var result in results)
             {
+                QueryResultGrid.Rows.Clear();
+                QueryResultGrid.Columns.Clear();
+
                 if (!result.IsSuccess)
                 {
                     QueryResultTabMessagesLabel.Text = result.Message;

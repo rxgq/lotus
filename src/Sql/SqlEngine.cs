@@ -70,6 +70,11 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
     {
         var tableName = createStmt.TableName;
 
+        var tableExists = GetTable(tableName) is not null;
+        if (tableExists) { 
+            return QueryResult<List<DatabaseRow>>.Err($"table '{createStmt.TableName}' already exists.");
+        }
+
         List<DatabaseColumn> columns = [];
         foreach (var column in createStmt.Columns) 
         {

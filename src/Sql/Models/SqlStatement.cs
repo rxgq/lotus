@@ -1,5 +1,7 @@
 ﻿using lotus.src.Enums;
 using lotus.src.Models;
+using System.ComponentModel.DataAnnotations;
+using System.Data.Common;
 
 namespace lotus.src.Sql.Models;
 
@@ -39,6 +41,34 @@ public sealed class InsertStatement(string tableName, List<string> columns, List
 public sealed class DropTableStatement(string tableName) : SqlStatement
 {
     public string TableName { get; set; } = tableName;
+}
+
+public abstract class AlterTableStatement(string tableName) : SqlStatement
+{
+    public string TableName { get; set; } = tableName;
+}
+
+public sealed class AddColumnStatement(string tableName, string columnName, string dataType) : AlterTableStatement(tableName)
+{
+    public string ColumnName { get; set; } = columnName;
+    public string DataType { get; set; } = dataType;
+}
+
+public sealed class DropColumnStatement(string tableName, string columnName) : AlterTableStatement(tableName)
+{
+    public string ColumnName { get; set; } = columnName;
+}
+
+public sealed class RenameColumnStatement(string tableName, string oldColumnName, string newColumnName) : AlterTableStatement(tableName)
+{
+    public string OldColumnName { get; set; } = oldColumnName;
+    public string NewColumnName { get; set; } = newColumnName;
+}
+
+public sealed class AlterColumnStatement(string tableName, string columnName, string dataType) : AlterTableStatement(tableName)
+{
+    public string ColumnName { get; set; } = columnName;
+    public string DataType { get; set; } = dataType;
 }
 
 public sealed class BadStatement(string literal) : SqlStatement

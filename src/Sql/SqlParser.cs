@@ -8,12 +8,12 @@ public sealed class SqlParser(List<SqlToken> tokens)
     private readonly List<SqlToken> Tokens = tokens;
     private int Current = 0;
 
-    private List<SqlStatement> Statements = [];
+    private readonly List<SqlStatement> Statements = [];
 
     public List<SqlStatement> ParseSql() {
         while (Current < Tokens.Count) {
             ParseStmt();
-            Current++;
+            Advance();
         }
 
         return Statements;
@@ -24,10 +24,11 @@ public sealed class SqlParser(List<SqlToken> tokens)
         SqlStatement stmt = Tokens[Current].Type switch 
         { 
             SqlTokenType.Select => ParseSelectStmt(),
-            SqlTokenType.From => ParseFromStmt(),
+            SqlTokenType.From   => ParseFromStmt(),
             SqlTokenType.Create => ParseFromCreateStmt(),
             SqlTokenType.Insert => ParseInsertStmt(),
-            SqlTokenType.Drop => ParseDropTable(),
+            SqlTokenType.Drop   => ParseDropTableStmt(),
+            SqlTokenType.Alter  => ParseAlterStmt(),
             _ => new BadStatement(Tokens[Current].Literal)
         };
 
@@ -42,7 +43,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         do
         {
             if (Tokens[Current].Type == SqlTokenType.Comma)
-                Current++;
+                Advance();
 
             var identifier = Tokens[Current];
             values.Add(identifier.Literal);
@@ -50,8 +51,8 @@ public sealed class SqlParser(List<SqlToken> tokens)
             if (identifier.Type == SqlTokenType.Star) 
                 break;
 
-            Current++;
-        } 
+            Advance();
+        }
         while (Tokens[Current].Type == SqlTokenType.Comma);
 
         return new SelectStatement(values);
@@ -71,7 +72,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Expect(SqlTokenType.Table);
 
         var identifier = Tokens[Current].Literal;
-        Current++;
+        Advance();
 
         Expect(SqlTokenType.LeftParen);
 
@@ -82,6 +83,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         }
 
         Expect(SqlTokenType.RightParen);
+        Current--;
 
         return new CreateTableStatement(identifier, columns);
     }
@@ -89,10 +91,10 @@ public sealed class SqlParser(List<SqlToken> tokens)
     private ColumnDeclarationStatement ParseColumnDeclaration() 
     { 
         var identifier = Tokens[Current].Literal;
-        Current++;
+        Advance();
 
         var dataType = Tokens[Current].Literal;
-        Current++;
+        Advance();
 
         Expect(SqlTokenType.Comma);
 
@@ -105,7 +107,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Expect(SqlTokenType.Into);
 
         var tableName = Tokens[Current].Literal;
-        Current++;
+        Advance();
 
         Expect(SqlTokenType.LeftParen);
 
@@ -113,7 +115,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         while (Tokens[Current].Type != SqlTokenType.RightParen) 
         {
             columns.Add(Tokens[Current].Literal);
-            Current++;
+            Advance();
 
             Expect(SqlTokenType.Comma);
         }
@@ -127,17 +129,18 @@ public sealed class SqlParser(List<SqlToken> tokens)
         while (Tokens[Current].Type != SqlTokenType.RightParen) 
         {
             values.Add(Tokens[Current]);
-            Current++;
+            Advance();
 
             Expect(SqlTokenType.Comma);
         }
 
         Expect(SqlTokenType.RightParen);
+        Current--;
 
         return new(tableName, columns, values);
     }
 
-    private DropTableStatement ParseDropTable() 
+    private DropTableStatement ParseDropTableStmt() 
     {
         Expect(SqlTokenType.Drop);
         Expect(SqlTokenType.Table);
@@ -145,6 +148,82 @@ public sealed class SqlParser(List<SqlToken> tokens)
         var identifier = Tokens[Current].Literal;
 
         return new(identifier);
+    }
+
+    private AlterTableStatement ParseAlterStmt() 
+    {
+        Expect(SqlTokenType.Alter);
+        Expect(SqlTokenType.Table);
+
+        var identifier = Tokens[Current].Literal;
+        Advance();
+
+        var action = Tokens[Current].Type;
+
+        AlterTableStatement result = action switch
+        {
+            SqlTokenType.Add => ParseAddColumnStmt(identifier),
+            SqlTokenType.Drop => ParseDropColumnStmt(identifier),
+            SqlTokenType.Rename => ParseRenameColumnStmt(identifier),
+            SqlTokenType.Alter => ParseAlterColumnStmt(identifier),
+            _ => throw new Exception("")
+        };
+
+        return result;
+    }
+
+    private AddColumnStatement ParseAddColumnStmt(string tableName) 
+    {
+        Expect(SqlTokenType.Add);
+
+        var columnName = Tokens[Current].Literal;
+        Advance();
+
+        var dataType = Tokens[Current].Literal;
+
+        return new(tableName, columnName, dataType);
+    }
+
+    private DropColumnStatement ParseDropColumnStmt(string tableName)
+    {
+        Expect(SqlTokenType.Drop);
+        Expect(SqlTokenType.Column);
+
+        var columnName = Tokens[Current].Literal;
+
+        return new(tableName, columnName);
+    }
+
+    private RenameColumnStatement ParseRenameColumnStmt(string tableName)
+    {
+        Expect(SqlTokenType.Rename);
+        Expect(SqlTokenType.Column);
+
+        var oldColumnName = Tokens[Current].Literal;
+        Advance();
+
+        Expect(SqlTokenType.To);
+        var newColumnName = Tokens[Current].Literal;
+
+        return new(tableName, oldColumnName, newColumnName);
+    }
+
+    private AlterColumnStatement ParseAlterColumnStmt(string tableName)
+    {
+        Expect(SqlTokenType.Alter);
+        Expect(SqlTokenType.Column);
+
+        var columnName = Tokens[Current].Literal;
+        Advance();
+
+        var dataType = Tokens[Current].Literal;
+
+        return new(tableName, columnName, dataType);
+    }
+
+    private void Advance() 
+    {
+        Current++;
     }
 
     private bool Expect(SqlTokenType type) {

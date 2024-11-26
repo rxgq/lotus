@@ -22,15 +22,17 @@ public sealed class SqlLexer(string source)
         { "into", SqlTokenType.Into },
         { "values", SqlTokenType.Values },
         { "drop", SqlTokenType.Drop },
+        { "alter", SqlTokenType.Alter },
+        { "column", SqlTokenType.Column },
+        { "add", SqlTokenType.Add },
+        { "rename", SqlTokenType.Rename },
+        { "to", SqlTokenType.To },
     };
 
     public List<SqlToken> Tokenize()
     {
         while (Current < Source.Length)
         {
-            while (Current < Source.Length && Source[Current] == ' ' || Source[Current] == '\n')
-                Current++;
-
             ParseToken();
             Current++;
         }
@@ -49,8 +51,12 @@ public sealed class SqlLexer(string source)
             ','  => NewToken(SqlTokenType.Comma, ","),
             '('  => NewToken(SqlTokenType.LeftParen, "("),
             ')'  => NewToken(SqlTokenType.RightParen, ")"),
+            ' '  => null,
+            '\n' => null,
             _    => throw new Exception($"Unknown token: >{Source[Current]}<")
         };
+
+        if (token is null) return;
 
         Tokens.Add(token);
     }
