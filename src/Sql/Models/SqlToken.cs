@@ -1,6 +1,6 @@
 ﻿using lotus.src.Sql.Enums;
 
-namespace lotus.src.Sql;
+namespace lotus.src.Sql.Models;
 
 public sealed class SqlToken()
 {

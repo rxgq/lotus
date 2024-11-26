@@ -1,5 +1,8 @@
 ﻿using lotus.src.Models;
+using lotus.src.Sql.Mappers;
+using lotus.src.Sql.Models;
 using System.Collections.Generic;
+using System.Data;
 
 namespace lotus.src.Sql;
 
@@ -15,7 +18,9 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var results = new List<QueryResult<List<DatabaseRow>>>();
         while (Current < Statements.Count) 
         {
-            results.Add(Execute(Statements[Current]));
+            var stmt = Statements[Current];
+
+            results.Add(Execute(stmt));
             Current++;
         }
 
@@ -27,6 +32,8 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var result = stmt switch
         {
             _ when stmt is SelectStatement select => ExecuteSelectStmt(select),
+            _ when stmt is CreateTableStatement create => ExecuteCreateTableStmt(create),
+            _ when stmt is InsertStatement insert => ExecuteInsertStmt(insert),
             _ => null
         };
 
@@ -38,7 +45,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var columns = selectStmt.Values.ToList();
 
         var fromStmt = Statements[Current + 1] as FromStatement;
-        var table = Tables.FirstOrDefault(x => x.Name == fromStmt.Table);
+        var table = GetTable(fromStmt.Table);
         Current++;
 
         if (table is null) {
@@ -50,11 +57,63 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         {
             rows = table.Rows;
         }
-        else 
+
+        return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: table);
+    }
+
+    private QueryResult<List<DatabaseRow>> ExecuteCreateTableStmt(CreateTableStatement createStmt)
+    {
+        var tableName = createStmt.TableName;
+
+        List<DatabaseColumn> columns = [];
+        foreach (var column in createStmt.Columns) 
         {
-            
+            var dbColumn = new DatabaseColumn() {  
+                DataType = DataTypeMapper.Map(column.DataType),
+                Title = column.ColumnName
+            };
+
+            columns.Add(dbColumn);
         }
 
-        return QueryResult<List<DatabaseRow>>.Ok(rows);
+        var table = new DatabaseTable() { 
+            Name = tableName,
+            Columns = columns,
+            Rows = []
+        };
+
+        Tables.Add(table);
+
+        return QueryResult<List<DatabaseRow>>.Ok(
+            message: $"created table '{tableName}'.",
+            tableAffected: table
+        );
+    }
+
+    // insert into flowers (flower_name, flower_count) values ('daffodil', 1)
+    private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertStatement insertStmt)
+    {
+        var table = GetTable(insertStmt.TableName);
+
+        var dbRow = new DatabaseRow() {
+            Values = []
+        };
+
+        for (int i = 0; i < insertStmt.Columns.Count; i++)
+        { 
+            var column = insertStmt.Columns[i];
+            var value = insertStmt.Values[i];
+
+            dbRow.Values.Add(column, value.Literal);
+        }
+
+        table.Rows.Add(dbRow);
+
+        return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
+    }
+
+    private DatabaseTable? GetTable(string name) 
+    {
+        return Tables.FirstOrDefault(x => x.Name == name);
     }
 }

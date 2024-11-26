@@ -15,12 +15,13 @@ public partial class DashboardForm : Form
 
     private void DashboardForm_Load(object sender, EventArgs e)
     {
-        var table = new DatabaseTable() {
+        var table = new DatabaseTable()
+        {
             Name = "flowers",
             Columns = [
-                new() { 
+                new() {
                     Title = "flower_name",
-                    DataType = DataColumnType.String
+                    DataType = DataColumnType.VarChar
                 },
                 new() {
                     Title = "flower_count",
@@ -28,7 +29,7 @@ public partial class DashboardForm : Form
                 }
             ],
             Rows = [
-                new() { 
+                new() {
                     Values = new() {
                         { "flower_name", "aster" },
                         { "flower_count", 3 },
@@ -54,21 +55,47 @@ public partial class DashboardForm : Form
         InitialiseTreeNodes();
     }
 
-    private void InitialiseTreeNodes() 
+    private void InitialiseTreeNodes()
     {
-        DashboardTreeView.Nodes.Add(new TreeNode() { 
+        DashboardTreeView.Nodes.Add(new TreeNode()
+        {
             Text = "tables",
             Name = "tables"
         });
 
-        foreach (var table in _engine.Tables) {
+        foreach (var table in _engine.Tables)
+        {
             var node = DashboardTreeView.Nodes.Find("tables", false).First();
-            
-            node.Nodes.Add(new TreeNode() { 
-                Text = table.Name 
+
+            node.Nodes.Add(new TreeNode()
+            {
+                Text = table.Name
             });
         }
     }
+
+    private void RefreshTables()
+    {
+        var tablesNode = DashboardTreeView.Nodes.Find("tables", false).FirstOrDefault();
+
+        if (tablesNode is not null)
+        {
+            tablesNode.Nodes.Clear();
+
+            foreach (var table in _engine.Tables)
+            {
+                tablesNode.Nodes.Add(new TreeNode()
+                {
+                    Text = table.Name
+                });
+            }
+        }
+        else
+        {
+            InitialiseTreeNodes();
+        }
+    }
+
 
     private void ExecuteQueryButton_Click(object sender, EventArgs e)
     {
@@ -82,9 +109,10 @@ public partial class DashboardForm : Form
         {
             var results = _engine.ParseSql(QueryEditorField.Text);
 
+            RefreshTables();
             foreach (var result in results)
             {
-                if (!result.IsSuccess) 
+                if (!result.IsSuccess)
                 {
                     QueryResultTabMessagesLabel.Text = result.Message;
                     continue;
@@ -92,18 +120,15 @@ public partial class DashboardForm : Form
 
                 var rows = result.Value;
 
-                if (rows.Count > 0)
+                foreach (var columnName in result.TableAffected.Columns.Select(x => x.Title))
                 {
-                    foreach (var columnName in rows.First().Values.Keys)
-                    {
-                        QueryResultGrid.Columns.Add(columnName, columnName);
-                    }
+                    QueryResultGrid.Columns.Add(columnName, columnName);
+                }
 
-                    foreach (var row in rows)
-                    {
-                        var values = row.Values.Select(x => x.Value).ToArray();
-                        QueryResultGrid.Rows.Add(values);
-                    }
+                foreach (var row in rows ?? [])
+                {
+                    var values = row.Values.Select(x => x.Value).ToArray();
+                    QueryResultGrid.Rows.Add(values);
                 }
 
                 stopwatch.Stop();
@@ -119,5 +144,8 @@ public partial class DashboardForm : Form
         }
     }
 
+    private void QueryEditorField_TextChanged(object sender, EventArgs e)
+    {
 
+    }
 }

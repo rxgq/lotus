@@ -1,4 +1,5 @@
 ﻿using lotus.src.Sql.Enums;
+using lotus.src.Sql.Models;
 
 namespace lotus.src.Sql;
 
@@ -24,6 +25,8 @@ public sealed class SqlParser(List<SqlToken> tokens)
         { 
             SqlTokenType.Select => ParseSelectStmt(),
             SqlTokenType.From => ParseFromStmt(),
+            SqlTokenType.Create => ParseFromCreateStmt(),
+            SqlTokenType.Insert => ParseInsertStmt(),
             _ => new BadStatement(Tokens[Current].Literal)
         };
 
@@ -59,6 +62,78 @@ public sealed class SqlParser(List<SqlToken> tokens)
 
         var identifier = Tokens[Current];
         return new FromStatement(identifier.Literal);
+    }
+
+    private CreateTableStatement ParseFromCreateStmt() 
+    {
+        Expect(SqlTokenType.Create);
+        Expect(SqlTokenType.Table);
+
+        var identifier = Tokens[Current].Literal;
+        Current++;
+
+        Expect(SqlTokenType.LeftParen);
+
+        var columns = new List<ColumnDeclarationStatement>();
+        while (Tokens[Current].Type != SqlTokenType.RightParen) {
+            var column = ParseColumnDeclaration();
+            columns.Add(column);
+        }
+
+        Expect(SqlTokenType.RightParen);
+
+        return new CreateTableStatement(identifier, columns);
+    }
+
+    private ColumnDeclarationStatement ParseColumnDeclaration() 
+    { 
+        var identifier = Tokens[Current].Literal;
+        Current++;
+
+        var dataType = Tokens[Current].Literal;
+        Current++;
+
+        Expect(SqlTokenType.Comma);
+
+        return new(identifier, dataType);
+    }
+
+    private InsertStatement ParseInsertStmt() 
+    {
+        Expect(SqlTokenType.Insert);
+        Expect(SqlTokenType.Into);
+
+        var tableName = Tokens[Current].Literal;
+        Current++;
+
+        Expect(SqlTokenType.LeftParen);
+
+        List<string> columns = [];
+        while (Tokens[Current].Type != SqlTokenType.RightParen) 
+        {
+            columns.Add(Tokens[Current].Literal);
+            Current++;
+
+            Expect(SqlTokenType.Comma);
+        }
+
+        Expect(SqlTokenType.RightParen);
+
+        Expect(SqlTokenType.Values);
+        Expect(SqlTokenType.LeftParen);
+
+        List<SqlToken> values = [];
+        while (Tokens[Current].Type != SqlTokenType.RightParen) 
+        {
+            values.Add(Tokens[Current]);
+            Current++;
+
+            Expect(SqlTokenType.Comma);
+        }
+
+        Expect(SqlTokenType.RightParen);
+
+        return new(tableName, columns, values);
     }
 
     private bool Expect(SqlTokenType type) {

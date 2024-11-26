@@ -6,9 +6,17 @@ public enum SqlTokenType
     From,
     Create,
     Table,
+    Insert,
+    Into,
+    Values,
     Star,
     Comma,
+    SingleQuote,
     LeftParen,
     RightParen,
-    Identifier
+    Identifier,
+    String,
+    Integer,
+    Float,
+    WhiteSpace
 }

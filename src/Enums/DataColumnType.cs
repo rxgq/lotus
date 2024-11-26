@@ -4,5 +4,6 @@ public enum DataColumnType
 { 
     Int,
     Float,
-    String
+    VarChar,
+    Bad
 }

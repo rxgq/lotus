@@ -48,6 +48,9 @@ partial class DashboardForm
         QueryEditorField.Size = new Size(748, 268);
         QueryEditorField.TabIndex = 1;
         QueryEditorField.Text = "";
+        QueryEditorField.TextChanged += QueryEditorField_TextChanged;
+        QueryEditorField.SelectionIndent = 10;
+        QueryEditorField.SelectionRightIndent = 10;
         // 
         // ExecuteQueryButton
         // 

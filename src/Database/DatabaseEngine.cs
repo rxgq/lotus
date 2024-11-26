@@ -1,6 +1,6 @@
 ﻿using lotus.src.Models;
 using lotus.src.Sql;
-using System.Data;
+using lotus.src.Sql.Models;
 
 namespace lotus.src.Database;
 
