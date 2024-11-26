@@ -1,6 +1,7 @@
 ﻿using lotus.src.Models;
-using lotus.src.Sql;
-using lotus.src.Sql.Models;
+using lotus.src.Sql.Engine;
+using lotus.src.Sql.Parser;
+using lotus.src.Sql.Utils;
 
 namespace lotus.src.Database;
 
@@ -11,14 +12,6 @@ public sealed class DatabaseEngine
     public void CreateTable(DatabaseTable table) 
     {
         Tables.Add(table);
-    }
-
-    public List<DatabaseRow> SelectFromTable(string name) 
-    {
-        var table = Tables.FirstOrDefault(x => x.Name == name);
-
-        if (table is null) return [];
-        return table.Rows;
     }
 
     public List<QueryResult<List<DatabaseRow>>> ParseSql(string source) 

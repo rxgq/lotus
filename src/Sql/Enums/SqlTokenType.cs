@@ -15,6 +15,7 @@ public enum SqlTokenType
     Column,
     Rename,
     To,
+    Delete,
     Star,
     Comma,
     SingleQuote,

@@ -10,4 +10,9 @@ public sealed class DatabaseTable
     {
         return Columns.Any(x => x.Title == title);
     }
+
+    public DatabaseColumn? GetColumn(string title) 
+    {
+        return Columns.FirstOrDefault(x => x.Title == title);
+    }
 }

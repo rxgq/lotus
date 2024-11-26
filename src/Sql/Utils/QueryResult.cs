@@ -1,13 +1,13 @@
 ﻿using lotus.src.Models;
 
-namespace lotus.src.Sql.Models;
+namespace lotus.src.Sql.Utils;
 
 public sealed class QueryResult<T>
 {
     public readonly bool IsSuccess;
     public readonly string? Message;
     public readonly T? Value;
-    
+
     public readonly DatabaseTable? TableAffected;
 
     private QueryResult(bool isSuccess, string? message, T? value, DatabaseTable? tableAffected)

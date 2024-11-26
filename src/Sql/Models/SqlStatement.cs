@@ -1,9 +1,4 @@
-﻿using lotus.src.Enums;
-using lotus.src.Models;
-using System.ComponentModel.DataAnnotations;
-using System.Data.Common;
-
-namespace lotus.src.Sql.Models;
+﻿namespace lotus.src.Sql.Models;
 
 public abstract class SqlStatement
 {
@@ -69,6 +64,11 @@ public sealed class AlterColumnStatement(string tableName, string columnName, st
 {
     public string ColumnName { get; set; } = columnName;
     public string DataType { get; set; } = dataType;
+}
+
+public sealed class DeleteFromStmt(string tableName) : SqlStatement
+{
+    public string TableName { get; set; } = tableName;
 }
 
 public sealed class BadStatement(string literal) : SqlStatement
