@@ -9,9 +9,10 @@ public sealed class SelectStatement(List<string> values) : SqlStatement
     public List<string> Values { get; set; } = values;
 }
 
-public sealed class FromStatement(string table) : SqlStatement
+public sealed class FromStatement(string table, LimitStmt? limitStmt) : SqlStatement
 {
     public string Table { get; set; } = table;
+    public LimitStmt? LimitStmt { get; set; } = limitStmt;
 }
 
 public sealed class CreateTableStatement(string tableName, List<ColumnDeclarationStatement> columns) : SqlStatement
@@ -69,6 +70,16 @@ public sealed class AlterColumnStatement(string tableName, string columnName, st
 public sealed class DeleteFromStmt(string tableName) : SqlStatement
 {
     public string TableName { get; set; } = tableName;
+}
+
+public sealed class LimitStmt(string count) : SqlStatement
+{
+    public string Count { get; set; } = count;
+}
+
+public sealed class WhereStmt(Expression condition) : SqlStatement
+{
+    public Expression Condition { get; set; } = condition;
 }
 
 public sealed class BadStatement(string literal) : SqlStatement

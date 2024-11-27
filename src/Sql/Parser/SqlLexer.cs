@@ -28,6 +28,11 @@ public sealed class SqlLexer(string source)
         { "rename", SqlTokenType.Rename },
         { "to",     SqlTokenType.To },
         { "delete", SqlTokenType.Delete },
+        { "where",  SqlTokenType.Where },
+        { "and",    SqlTokenType.And },
+        { "or",     SqlTokenType.Or },
+        { "not",    SqlTokenType.Not },
+        { "limit",  SqlTokenType.Limit },
     };
 
     public List<SqlToken> Tokenize()
@@ -52,6 +57,9 @@ public sealed class SqlLexer(string source)
             ','  => NewToken(SqlTokenType.Comma, ","),
             '('  => NewToken(SqlTokenType.LeftParen, "("),
             ')'  => NewToken(SqlTokenType.RightParen, ")"),
+            '<'  => NewToken(SqlTokenType.LessThan, "<"),
+            '>'  => NewToken(SqlTokenType.GreaterThan, ">"),
+            '='  => NewToken(SqlTokenType.Equals, "="),
             ' '  => null,
             '\n' => null,
             _    => throw new Exception($"Unknown token: >{Source[Current]}<")
@@ -92,7 +100,7 @@ public sealed class SqlLexer(string source)
         var start = Current;
 
         bool hasDecimal = false;
-        while (char.IsAsciiDigit(Source[Current]) || Source[Current] == '.')
+        while (Current < Source.Length && (char.IsAsciiDigit(Source[Current]) || Source[Current] == '.'))
         {
             if (hasDecimal && Source[Current] == '.')
             {

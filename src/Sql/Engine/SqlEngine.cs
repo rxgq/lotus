@@ -37,6 +37,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             _ when stmt is InsertStatement insert => ExecuteInsertStmt(insert),
             _ when stmt is DropTableStatement drop => ExecuteDropTableStmt(drop),
             _ when stmt is AlterTableStatement alter => ExecuteAlterTableStmt(alter),
+            _ when stmt is DeleteFromStmt delete => ExecuteDeleteFromStmt(delete),
             _ => throw new Exception($"Unknown SQL expression {stmt}")
         };
 
@@ -64,6 +65,18 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         else
         {
             // handle specific columns being selected
+        }
+
+        if (fromStmt.LimitStmt is not null) 
+        {
+            var isDigit = int.TryParse(fromStmt.LimitStmt.Count, out int count);
+
+            if (!isDigit || count < 0) 
+            { 
+                return QueryResult<List<DatabaseRow>>.Err($"'{fromStmt.LimitStmt.Count}' is not valid in this expression.");
+            }
+
+            rows = rows.Take(count).ToList();
         }
 
         return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: table);
@@ -208,6 +221,19 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         {
             return QueryResult<List<DatabaseRow>>.Err($"column '{alterColumnStmt.ColumnName}' does not exist.");
         }
+
+        return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
+    }
+
+    private QueryResult<List<DatabaseRow>> ExecuteDeleteFromStmt(DeleteFromStmt deleteFromStmt)
+    {
+        var table = GetTable(deleteFromStmt.TableName);
+        if (table is null)
+        {
+            return QueryResult<List<DatabaseRow>>.Err($"table '{deleteFromStmt.TableName}' does not exist.");
+        }
+
+        table.Rows.Clear();
 
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
     }

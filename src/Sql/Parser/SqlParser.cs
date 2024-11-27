@@ -32,6 +32,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
             SqlTokenType.Drop   => ParseDropTableStmt(),
             SqlTokenType.Alter  => ParseAlterStmt(),
             SqlTokenType.Delete => ParseDeleteStmt(),
+            SqlTokenType.Where  => ParseWhereStmt(),
             _ => new BadStatement(Tokens[Current].Literal)
         };
 
@@ -66,7 +67,18 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Expect(SqlTokenType.From);
 
         var identifier = Tokens[Current];
-        return new FromStatement(identifier.Literal);
+
+        if (Peek().Type == SqlTokenType.Limit) 
+        {
+            Advance();
+            Expect(SqlTokenType.Limit);
+
+            var count = Tokens[Current];
+
+            return new FromStatement(identifier.Literal, new(count.Literal));
+        }
+
+        return new FromStatement(identifier.Literal, null);
     }
 
     private CreateTableStatement ParseFromCreateStmt()
@@ -235,9 +247,91 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new(tableName);
     }
 
+    private LimitStmt ParseLimitStmt() 
+    {
+        Expect(SqlTokenType.Limit);
+        var count = Tokens[Current].Literal;
+
+        return new(count);
+    }
+
+    private WhereStmt ParseWhereStmt()
+    {
+        Expect(SqlTokenType.Where);
+
+        var condition = ParseExpression();
+        return new WhereStmt(condition);
+    }
+
+    private Expression ParseExpression()
+    {
+        var left = ParsePrimary();
+
+        while (IsLogicalOperator(Tokens[Current].Type) || IsComparisonOperator(Tokens[Current].Type)) 
+        { 
+            var op = Tokens[Current].Literal;
+            Advance();
+
+            var right = ParsePrimary();
+            left = new BinaryExpression(left, op, right);
+        }
+
+        return left;
+    }
+
+    private Expression ParsePrimary()
+    {
+        if (Tokens[Current].Type == SqlTokenType.LeftParen)
+        {
+            Advance();
+            var expr = ParseExpression();
+            Expect(SqlTokenType.RightParen);
+            return expr;
+        }
+
+        if (Tokens[Current].Type == SqlTokenType.Identifier || 
+            Tokens[Current].Type == SqlTokenType.String ||
+            Tokens[Current].Type == SqlTokenType.Integer ||
+            Tokens[Current].Type == SqlTokenType.Float)
+        {
+            var value = Tokens[Current].Literal;
+            Advance();
+            return new LiteralExpression(value);
+        }
+
+        if (IsComparisonOperator(Tokens[Current].Type))
+        {
+            var column = Tokens[Current - 1].Literal;
+            var op = Tokens[Current].Literal;
+            Advance();
+            var value = Tokens[Current].Literal;
+            Advance();
+            return new ComparisonExpression(column, op, value);
+        }
+
+        throw new Exception("Unexpected token in expression.");
+    }
+
+    private static bool IsLogicalOperator(SqlTokenType type)
+    {
+        return type == SqlTokenType.And || type == SqlTokenType.Or || type == SqlTokenType.Not;
+    }
+
+    private static bool IsComparisonOperator(SqlTokenType type)
+    {
+        return type == SqlTokenType.Equals ||
+               type == SqlTokenType.GreaterThan ||
+               type == SqlTokenType.LessThan;
+    }
+
     private void Advance()
     {
         Current++;
+    }
+
+    private SqlToken Peek() 
+    {
+        return Tokens[Current + 1];
     }
 
     private bool Expect(SqlTokenType type)
