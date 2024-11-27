@@ -4,10 +4,11 @@ public abstract class SqlStatement
 {
 }
 
-public sealed class SelectStatement(List<string> values, FromStatement fromStmt) : SqlStatement
+public sealed class SelectStatement(List<string> values, FromStatement fromStmt, bool isDistinct) : SqlStatement
 {
     public List<string> Values { get; set; } = values;
     public FromStatement FromStmt { get; set; } = fromStmt;
+    public bool IsDistinct { get; set; } = isDistinct;
 }
 
 public sealed class FromStatement(string table, LimitStmt? limitStmt) : SqlStatement

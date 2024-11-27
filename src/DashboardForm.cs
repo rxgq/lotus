@@ -3,6 +3,7 @@ using lotus.src.Enums;
 using lotus.src.Models;
 using lotus.src.Sql.Utils;
 using System.Diagnostics;
+using System.Linq;
 
 namespace lotus;
 
@@ -39,6 +40,12 @@ public partial class DashboardForm : Form
                 },
                 new() {
                     Values = new() {
+                        { "flower_name", "aster" },
+                        { "flower_count", 4 },
+                    }
+                },
+                new() {
+                    Values = new() {
                         { "flower_name", "tulip" },
                         { "flower_count", 8 },
                     }
@@ -46,7 +53,7 @@ public partial class DashboardForm : Form
                 new() {
                     Values = new() {
                         { "flower_name", "daisy" },
-                        { "flower_count", 2 },
+                        { "flower_count", 8 },
                     }
                 }
             ],
@@ -126,7 +133,7 @@ public partial class DashboardForm : Form
         }
     }
 
-    private void AddColumnsAndRows(QueryResult<List<DatabaseRow>> result) 
+    private void AddColumnsAndRows(QueryResult<List<DatabaseRow>> result)
     {
         foreach (var columnName in result.TableResult.Columns.Select(x => x.Title))
         {
@@ -135,8 +142,19 @@ public partial class DashboardForm : Form
 
         foreach (var row in result.Value ?? [])
         {
-            var values = row.Values.Select(x => x.Value ?? "NULL").ToArray();
-            QueryResultGrid.Rows.Add(values);
+            var values = result.TableResult.Columns
+                .Select(column =>
+                {
+                    row.Values.TryGetValue(column.Title, out var value);
+                    return value ?? "NULL";
+                })
+                .ToArray();
+
+            if (!values.Contains("NULL"))
+            {
+                QueryResultGrid.Rows.Add(values);
+            }
         }
     }
+
 }

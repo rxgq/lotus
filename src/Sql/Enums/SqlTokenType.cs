@@ -18,6 +18,7 @@ public enum SqlTokenType
     Delete,
     Where,
     Limit,
+    Distinct,
     Star,
     Comma,
     SingleQuote,

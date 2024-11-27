@@ -56,30 +56,20 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             return QueryResult<List<DatabaseRow>>.Err($"table '{selectStmt.FromStmt.Table}' does not exist.");
         }
 
+        List<DatabaseColumn> columnsResult = table.Columns
+            .Where(col => columns.Contains(col.Title)).ToList();
+        if (columns[0] == "*") columnsResult = table.Columns;
+
         List<DatabaseRow> rows = table.Rows;
-        if (columns[0] != "*")
-        {
-            
-        }
-
-        List<DatabaseColumn> columnsResult = [];
-        foreach (var col in table.Columns) 
-        {
-            foreach (var columnName in columns) 
-            {
-                if (columnName == col.Title) columnsResult.Add(col);
-            }
-        }
-
         var tableResult = _tableFactory.Create(table.Name, columnsResult, rows);
 
-        if (selectStmt.FromStmt.LimitStmt is not null) 
+        var limitStmt = selectStmt.FromStmt.LimitStmt;
+        if (limitStmt is not null) 
         {
-            var isDigit = int.TryParse(selectStmt.FromStmt.LimitStmt.Count, out int count);
-
+            var isDigit = int.TryParse(limitStmt.Count, out int count);
             if (!isDigit || count < 0) 
             { 
-                return QueryResult<List<DatabaseRow>>.Err($"'{selectStmt.FromStmt.LimitStmt.Count}' is not valid in this expression.");
+                return QueryResult<List<DatabaseRow>>.Err($"'{limitStmt.Count}' is not valid in this expression.");
             }
 
             rows = rows.Take(count).ToList();

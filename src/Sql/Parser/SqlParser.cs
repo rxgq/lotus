@@ -42,6 +42,9 @@ public sealed class SqlParser(List<SqlToken> tokens)
     {
         Expect(SqlTokenType.Select);
 
+        bool isDistinct = Match(SqlTokenType.Distinct);
+        if (isDistinct) Advance();
+
         List<string> values = [];
         do
         {
@@ -61,7 +64,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Advance();
         var fromStmt = ParseFromStmt();
 
-        return new SelectStatement(values, fromStmt);
+        return new SelectStatement(values, fromStmt, isDistinct);
     }
 
     private FromStatement ParseFromStmt()
