@@ -1,6 +1,8 @@
 using lotus.src.Database;
 using lotus.src.Enums;
 using lotus.src.Models;
+using lotus.src.Sql.Utils;
+using System.Diagnostics;
 
 namespace lotus;
 
@@ -78,36 +80,26 @@ public partial class DashboardForm : Form
     {
         var tablesNode = DashboardTreeView.Nodes
             .Find("tables", false).FirstOrDefault();
+        tablesNode.Nodes.Clear();
 
-        if (tablesNode is not null)
+        foreach (var table in _engine.Tables)
         {
-            tablesNode.Nodes.Clear();
-
-            foreach (var table in _engine.Tables)
-            {
-                tablesNode.Nodes.Add(new TreeNode()
-                {
-                    Text = table.Name
-                });
-            }
-        }
-        else
-        {
-            InitialiseTreeNodes();
+            tablesNode.Nodes.Add(new TreeNode() {
+                Text = table.Name
+            });
         }
     }
 
-
     private void ExecuteQueryButton_Click(object sender, EventArgs e)
     {
-        var stopwatch = new System.Diagnostics.Stopwatch();
+        var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         try
         {
             var results = _engine.ParseSql(QueryEditorField.Text);
-
             RefreshTables();
+
             foreach (var result in results)
             {
                 QueryResultGrid.Rows.Clear();
@@ -119,18 +111,7 @@ public partial class DashboardForm : Form
                     continue;
                 }
 
-                var rows = result.Value;
-
-                foreach (var columnName in result.TableAffected.Columns.Select(x => x.Title))
-                {
-                    QueryResultGrid.Columns.Add(columnName, columnName);
-                }
-
-                foreach (var row in rows ?? [])
-                {
-                    var values = row.Values.Select(x => x.Value ?? "NULL").ToArray();
-                    QueryResultGrid.Rows.Add(values);
-                }
+                AddColumnsAndRows(result);
 
                 stopwatch.Stop();
                 var elapsedTime = stopwatch.ElapsedMilliseconds;
@@ -145,8 +126,17 @@ public partial class DashboardForm : Form
         }
     }
 
-    private void QueryEditorField_TextChanged(object sender, EventArgs e)
+    private void AddColumnsAndRows(QueryResult<List<DatabaseRow>> result) 
     {
+        foreach (var columnName in result.TableResult.Columns.Select(x => x.Title))
+        {
+            QueryResultGrid.Columns.Add(columnName, columnName);
+        }
 
+        foreach (var row in result.Value ?? [])
+        {
+            var values = row.Values.Select(x => x.Value ?? "NULL").ToArray();
+            QueryResultGrid.Rows.Add(values);
+        }
     }
 }

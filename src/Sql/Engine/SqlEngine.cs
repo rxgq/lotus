@@ -32,12 +32,12 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
     {
         var result = stmt switch
         {
-            _ when stmt is SelectStatement select => ExecuteSelectStmt(select),
+            _ when stmt is SelectStatement select      => ExecuteSelectStmt(select),
             _ when stmt is CreateTableStatement create => ExecuteCreateTableStmt(create),
-            _ when stmt is InsertStatement insert => ExecuteInsertStmt(insert),
-            _ when stmt is DropTableStatement drop => ExecuteDropTableStmt(drop),
-            _ when stmt is AlterTableStatement alter => ExecuteAlterTableStmt(alter),
-            _ when stmt is DeleteFromStmt delete => ExecuteDeleteFromStmt(delete),
+            _ when stmt is InsertIntoStatement insert  => ExecuteInsertStmt(insert),
+            _ when stmt is DropTableStatement drop     => ExecuteDropTableStmt(drop),
+            _ when stmt is AlterTableStatement alter   => ExecuteAlterTableStmt(alter),
+            _ when stmt is DeleteFromStmt delete       => ExecuteDeleteFromStmt(delete),
             _ => throw new Exception($"Unknown SQL expression {stmt}")
         };
 
@@ -56,15 +56,22 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             return QueryResult<List<DatabaseRow>>.Err($"table '{selectStmt.FromStmt.Table}' does not exist.");
         }
 
-        List<DatabaseRow> rows = [];
-        if (columns[0] == "*")
+        List<DatabaseRow> rows = table.Rows;
+        if (columns[0] != "*")
         {
-            rows = table.Rows;
+            
         }
-        else
+
+        List<DatabaseColumn> columnsResult = [];
+        foreach (var col in table.Columns) 
         {
-            // handle specific columns being selected
+            foreach (var columnName in columns) 
+            {
+                if (columnName == col.Title) columnsResult.Add(col);
+            }
         }
+
+        var tableResult = _tableFactory.Create(table.Name, columnsResult, rows);
 
         if (selectStmt.FromStmt.LimitStmt is not null) 
         {
@@ -78,7 +85,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             rows = rows.Take(count).ToList();
         }
 
-        return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: table);
+        return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: tableResult);
     }
 
     private QueryResult<List<DatabaseRow>> ExecuteCreateTableStmt(CreateTableStatement createStmt)
@@ -105,7 +112,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         );
     }
 
-    private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertStatement insertStmt)
+    private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertIntoStatement insertStmt)
     {
         var table = GetTable(insertStmt.TableName);
         if (table is null)

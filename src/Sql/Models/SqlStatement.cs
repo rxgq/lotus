@@ -28,7 +28,7 @@ public sealed class ColumnDeclarationStatement(string columnName, string dataTyp
     public string DataType { get; set; }  = dataType;
 }
 
-public sealed class InsertStatement(string tableName, List<string> columns, List<SqlToken> values) : SqlStatement 
+public sealed class InsertIntoStatement(string tableName, List<string> columns, List<SqlToken> values) : SqlStatement 
 {
     public string TableName { get; set; } = tableName;
     public List<string> Columns { get; set; } = columns;

@@ -8,14 +8,15 @@ public sealed class QueryResult<T>
     public readonly string? Message;
     public readonly T? Value;
 
-    public readonly DatabaseTable? TableAffected;
+    // holds the data to display in the query result tab
+    public readonly DatabaseTable? TableResult;
 
-    private QueryResult(bool isSuccess, string? message, T? value, DatabaseTable? tableAffected)
+    private QueryResult(bool isSuccess, string? message, T? value, DatabaseTable? tableResult)
     {
         IsSuccess = isSuccess;
         Message = message;
         Value = value;
-        TableAffected = tableAffected;
+        TableResult = tableResult;
     }
 
     public static QueryResult<T> Ok(T? t = default, string? message = null, DatabaseTable? tableAffected = null)

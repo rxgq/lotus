@@ -120,7 +120,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new(identifier, dataType);
     }
 
-    private InsertStatement ParseInsertStmt()
+    private InsertIntoStatement ParseInsertStmt()
     {
         Expect(SqlTokenType.Insert);
         Expect(SqlTokenType.Into);
