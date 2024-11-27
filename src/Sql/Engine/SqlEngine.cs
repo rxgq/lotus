@@ -48,13 +48,12 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
     {
         var columns = selectStmt.Values.ToList();
 
-        var fromStmt = Statements[Current + 1] as FromStatement;
-        var table = GetTable(fromStmt.Table);
+        var table = GetTable(selectStmt.FromStmt.Table);
         Current++;
 
         if (table is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{fromStmt.Table}' does not exist.");
+            return QueryResult<List<DatabaseRow>>.Err($"table '{selectStmt.FromStmt.Table}' does not exist.");
         }
 
         List<DatabaseRow> rows = [];
@@ -67,13 +66,13 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             // handle specific columns being selected
         }
 
-        if (fromStmt.LimitStmt is not null) 
+        if (selectStmt.FromStmt.LimitStmt is not null) 
         {
-            var isDigit = int.TryParse(fromStmt.LimitStmt.Count, out int count);
+            var isDigit = int.TryParse(selectStmt.FromStmt.LimitStmt.Count, out int count);
 
             if (!isDigit || count < 0) 
             { 
-                return QueryResult<List<DatabaseRow>>.Err($"'{fromStmt.LimitStmt.Count}' is not valid in this expression.");
+                return QueryResult<List<DatabaseRow>>.Err($"'{selectStmt.FromStmt.LimitStmt.Count}' is not valid in this expression.");
             }
 
             rows = rows.Take(count).ToList();

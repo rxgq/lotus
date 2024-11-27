@@ -4,9 +4,10 @@ public abstract class SqlStatement
 {
 }
 
-public sealed class SelectStatement(List<string> values) : SqlStatement
+public sealed class SelectStatement(List<string> values, FromStatement fromStmt) : SqlStatement
 {
     public List<string> Values { get; set; } = values;
+    public FromStatement FromStmt { get; set; } = fromStmt;
 }
 
 public sealed class FromStatement(string table, LimitStmt? limitStmt) : SqlStatement

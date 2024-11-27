@@ -26,8 +26,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         SqlStatement stmt = Tokens[Current].Type switch
         {
             SqlTokenType.Select => ParseSelectStmt(),
-            SqlTokenType.From   => ParseFromStmt(),
-            SqlTokenType.Create => ParseFromCreateStmt(),
+            SqlTokenType.Create => ParseCreateStmt(),
             SqlTokenType.Insert => ParseInsertStmt(),
             SqlTokenType.Drop   => ParseDropTableStmt(),
             SqlTokenType.Alter  => ParseAlterStmt(),
@@ -59,7 +58,10 @@ public sealed class SqlParser(List<SqlToken> tokens)
         }
         while (Tokens[Current].Type == SqlTokenType.Comma);
 
-        return new SelectStatement(values);
+        Advance();
+        var fromStmt = ParseFromStmt();
+
+        return new SelectStatement(values, fromStmt);
     }
 
     private FromStatement ParseFromStmt()
@@ -68,7 +70,8 @@ public sealed class SqlParser(List<SqlToken> tokens)
 
         var identifier = Tokens[Current];
 
-        if (Peek().Type == SqlTokenType.Limit) 
+        Advance();
+        if (Match(SqlTokenType.Limit)) 
         {
             Advance();
             Expect(SqlTokenType.Limit);
@@ -81,7 +84,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new FromStatement(identifier.Literal, null);
     }
 
-    private CreateTableStatement ParseFromCreateStmt()
+    private CreateTableStatement ParseCreateStmt()
     {
         Expect(SqlTokenType.Create);
         Expect(SqlTokenType.Table);
@@ -329,9 +332,10 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Current++;
     }
 
-    private SqlToken Peek() 
+    private bool Match(SqlTokenType type) 
     {
-        return Tokens[Current + 1];
+        if (Current >= Tokens.Count) return false;
+        return Tokens[Current].Type == type;
     }
 
     private bool Expect(SqlTokenType type)
