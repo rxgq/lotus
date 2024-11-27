@@ -177,17 +177,32 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Expect(SqlTokenType.Alter);
         Expect(SqlTokenType.Table);
 
-        var identifier = Tokens[Current].Literal;
+        var tableName = Tokens[Current].Literal;
         Advance();
 
         var action = Tokens[Current].Type;
 
         AlterTableStatement result = action switch
         {
-            SqlTokenType.Add => ParseAddColumnStmt(identifier),
-            SqlTokenType.Drop => ParseDropColumnStmt(identifier),
-            SqlTokenType.Rename => ParseRenameColumnStmt(identifier),
-            SqlTokenType.Alter => ParseAlterColumnStmt(identifier),
+            SqlTokenType.Add => ParseAddColumnStmt(tableName),
+            SqlTokenType.Drop => ParseDropColumnStmt(tableName),
+            SqlTokenType.Rename => ParseRenameStmt(tableName),
+            SqlTokenType.Alter => ParseAlterColumnStmt(tableName),
+            _ => throw new Exception("")
+        };
+
+        return result;
+    }
+
+    private AlterTableStatement ParseRenameStmt(string tableName) 
+    {
+        Expect(SqlTokenType.Rename);
+
+        var action = Tokens[Current].Type;
+        AlterTableStatement result = action switch
+        {
+            SqlTokenType.To => ParseRenameTableStmt(tableName),
+            SqlTokenType.Column => ParseRenameColumnStmt(tableName),
             _ => throw new Exception("")
         };
 
@@ -218,7 +233,6 @@ public sealed class SqlParser(List<SqlToken> tokens)
 
     private RenameColumnStatement ParseRenameColumnStmt(string tableName)
     {
-        Expect(SqlTokenType.Rename);
         Expect(SqlTokenType.Column);
 
         var oldColumnName = Tokens[Current].Literal;
@@ -228,6 +242,16 @@ public sealed class SqlParser(List<SqlToken> tokens)
         var newColumnName = Tokens[Current].Literal;
 
         return new(tableName, oldColumnName, newColumnName);
+    }
+
+    private RenameTableStatement ParseRenameTableStmt(string tableName)
+    {
+        Expect(SqlTokenType.To);
+
+        var newTableName = Tokens[Current].Literal;
+        Advance();
+
+        return new(tableName, newTableName);
     }
 
     private AlterColumnStatement ParseAlterColumnStmt(string tableName)

@@ -75,6 +75,28 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             rows = rows.Take(count).ToList();
         }
 
+        if (selectStmt.IsDistinct)
+        {
+            List<DatabaseRow> rowsToKeep = [];
+            var seen = new HashSet<string>();
+
+            foreach (var row in rows)
+            {
+                var key = string.Join("|", columnsResult.Select(col =>
+                    row.Values.TryGetValue(col.Title, out var value) ? value.ToString() : "NULL")
+                );
+
+                if (!seen.Contains(key))
+                {
+                    rowsToKeep.Add(row);
+                    seen.Add(key);
+                }
+            }
+
+            rows = rowsToKeep;
+        }
+
+
         return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: tableResult);
     }
 
@@ -165,6 +187,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             _ when alterStmt is AddColumnStatement addColumn => ExecuteAddColumnStmt(addColumn, table),
             _ when alterStmt is DropColumnStatement dropColumn => ExecuteDropColumnStmt(dropColumn, table),
             _ when alterStmt is RenameColumnStatement renameColumn => ExecuteRenameColumnStmt(renameColumn, table),
+            _ when alterStmt is RenameTableStatement renameTable => ExecuteRenameTableStmt(renameTable, table),
             _ when alterStmt is AlterColumnStatement alterColumn => ExecuteAlterColumnStmt(alterColumn, table),
         };
 
@@ -202,10 +225,33 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var column = table.GetColumn(renameColumnStmt.OldColumnName);
         if (column is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"column '{renameColumnStmt.OldColumnName}' does not exist.");
+            return QueryResult<List<DatabaseRow>>.Err($"Column '{renameColumnStmt.OldColumnName}' does not exist.");
         }
 
         column.Title = renameColumnStmt.NewColumnName;
+
+        foreach (var row in table.Rows)
+        {
+            if (!row.Values.ContainsKey(renameColumnStmt.OldColumnName))
+                continue;
+
+            var value = row.Values[renameColumnStmt.OldColumnName];
+            row.Values.Remove(renameColumnStmt.OldColumnName);
+            row.Values[renameColumnStmt.NewColumnName] = value;
+        }
+
+        return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
+    }
+
+    private QueryResult<List<DatabaseRow>> ExecuteRenameTableStmt(RenameTableStatement renameTableStmt, DatabaseTable table)
+    {
+        var tableExists = GetTable(renameTableStmt.TableName) is not null;
+        if (!tableExists)
+        {
+            return QueryResult<List<DatabaseRow>>.Err($"table '{renameTableStmt.TableName}' does not exists.");
+        }
+
+        table.Name = renameTableStmt.NewTableName;
 
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
     }

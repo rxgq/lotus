@@ -69,6 +69,12 @@ public sealed class AlterColumnStatement(string tableName, string columnName, st
     public string DataType { get; set; } = dataType;
 }
 
+public sealed class RenameTableStatement(string tableName, string newTableName) : AlterTableStatement(tableName)
+{
+    public string NewTableName { get; set; } = newTableName;
+}
+
+
 public sealed class DeleteFromStmt(string tableName) : SqlStatement
 {
     public string TableName { get; set; } = tableName;
