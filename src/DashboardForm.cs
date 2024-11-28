@@ -180,31 +180,6 @@ public partial class DashboardForm : Form
         databasesNode.Expand();
     }
 
-    private readonly Dictionary<string, SqlTokenType> Keywords = new() {
-        { "select",   SqlTokenType.Select },
-        { "from",     SqlTokenType.From },
-        { "create",   SqlTokenType.Create },
-        { "table",    SqlTokenType.Table },
-        { "insert",   SqlTokenType.Insert },
-        { "into",     SqlTokenType.Into },
-        { "values",   SqlTokenType.Values },
-        { "drop",     SqlTokenType.Drop },
-        { "alter",    SqlTokenType.Alter },
-        { "column",   SqlTokenType.Column },
-        { "add",      SqlTokenType.Add },
-        { "rename",   SqlTokenType.Rename },
-        { "to",       SqlTokenType.To },
-        { "delete",   SqlTokenType.Delete },
-        { "where",    SqlTokenType.Where },
-        { "and",      SqlTokenType.And },
-        { "or",       SqlTokenType.Or },
-        { "not",      SqlTokenType.Not },
-        { "limit",    SqlTokenType.Limit },
-        { "distinct", SqlTokenType.Distinct },
-        { "use",      SqlTokenType.Use },
-        { "database", SqlTokenType.Database },
-    };
-
     private void HighlightKeywordsInQuery(object sender, EventArgs e)
     {
         var keywordsBlue = new[] {
