@@ -23,6 +23,11 @@ public sealed class CreateTableStatement(string tableName, List<ColumnDeclaratio
     public List<ColumnDeclarationStatement> Columns { get; set; } = columns;
 }
 
+public sealed class CreateDatabaseStatement(string databaseName) : SqlStatement 
+{
+    public string DatabaseName { get; set; } = databaseName;
+}
+
 public sealed class ColumnDeclarationStatement(string columnName, string dataType) : SqlStatement
 {
     public string ColumnName { get; set; } = columnName;
@@ -39,6 +44,11 @@ public sealed class InsertIntoStatement(string tableName, List<string> columns, 
 public sealed class DropTableStatement(string tableName) : SqlStatement
 {
     public string TableName { get; set; } = tableName;
+}
+
+public sealed class DropDatabaseStatement(string databaseName) : SqlStatement
+{
+    public string DatabaseName { get; set; } = databaseName;
 }
 
 public abstract class AlterTableStatement(string tableName) : SqlStatement
@@ -83,6 +93,11 @@ public sealed class DeleteFromStmt(string tableName) : SqlStatement
 public sealed class LimitStmt(string count) : SqlStatement
 {
     public string Count { get; set; } = count;
+}
+
+public sealed class UseStmt(string databaseName) : SqlStatement 
+{
+    public string DatabaseName { get; set; } = databaseName;
 }
 
 public sealed class WhereStmt(Expression condition) : SqlStatement

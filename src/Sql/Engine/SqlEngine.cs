@@ -1,44 +1,66 @@
-﻿using lotus.src.Factories;
-using lotus.src.Models;
+﻿using lotus.src.Database;
+using lotus.src.Database.Factories;
+using lotus.src.Database.Models;
+using lotus.src.Database.Utils;
 using lotus.src.Sql.Models;
 using lotus.src.Sql.Utils;
 
 namespace lotus.src.Sql.Engine;
 
-public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable> tables)
+public sealed partial class SqlEngine
 {
+    private readonly DatabaseEngine DatabaseEngine;
+    private readonly SqlErrorHandler _errorHandler;
+
     private readonly DatabaseColumnFactory _columnFactory = new();
     private readonly DatabaseRowFactory _rowFactory = new();
     private readonly DatabaseTableFactory _tableFactory = new();
+    private readonly DatabaseFactory _dbFactory = new();
 
-    private readonly List<SqlStatement> Statements = statements;
-    private readonly List<DatabaseTable> Tables = tables;
+    private readonly List<SqlStatement> Statements = [];
+    public readonly List<string> ExecutionErrors = [];
 
     private int Current = 0;
 
-    public List<QueryResult<List<DatabaseRow>>> ExecuteStatements()
+    private List<DatabaseTable> Tables => DatabaseEngine.ActiveDatabase!.Tables;    
+    public SqlEngine(List<SqlStatement> statements, DatabaseEngine databaseEngine)
+    { 
+        DatabaseEngine = databaseEngine;
+        Statements = statements;
+
+        _errorHandler = new(ExecutionErrors);
+    }
+
+    public ExecutionResult ExecuteStatements()
     {
         var results = new List<QueryResult<List<DatabaseRow>>>();
         while (Current < Statements.Count)
         {
             results.Add(Execute(Statements[Current]));
+
+            if (ExecutionErrors.Count > 0)
+                return new ExecutionResult(results, ExecutionErrors);
+
             Current++;
         }
 
-        return results;
+        return new ExecutionResult(results, ExecutionErrors);
     }
 
     private QueryResult<List<DatabaseRow>> Execute(SqlStatement stmt)
     {
         var result = stmt switch
         {
-            _ when stmt is SelectStatement select      => ExecuteSelectStmt(select),
-            _ when stmt is CreateTableStatement create => ExecuteCreateTableStmt(create),
-            _ when stmt is InsertIntoStatement insert  => ExecuteInsertStmt(insert),
-            _ when stmt is DropTableStatement drop     => ExecuteDropTableStmt(drop),
-            _ when stmt is AlterTableStatement alter   => ExecuteAlterTableStmt(alter),
-            _ when stmt is DeleteFromStmt delete       => ExecuteDeleteFromStmt(delete),
-            _ => throw new Exception($"Unknown SQL expression {stmt}")
+            _ when stmt is SelectStatement select           => ExecuteSelectStmt(select),
+            _ when stmt is CreateTableStatement createTb    => ExecuteCreateTableStmt(createTb),
+            _ when stmt is CreateDatabaseStatement createDb => ExecuteCreateDatabaseStmt(createDb),
+            _ when stmt is InsertIntoStatement insert       => ExecuteInsertStmt(insert),
+            _ when stmt is DropTableStatement dropTb        => ExecuteDropTableStmt(dropTb),
+            _ when stmt is DropDatabaseStatement dropDb     => ExecuteDropDatabaseStmt(dropDb),
+            _ when stmt is AlterTableStatement alter        => ExecuteAlterTableStmt(alter),
+            _ when stmt is DeleteFromStmt delete            => ExecuteDeleteFromStmt(delete),
+            _ when stmt is UseStmt use                      => ExecuteUseStmt(use),
+            _ => _errorHandler.UnknownExpression(stmt.ToString() ?? "")
         };
 
         return result;
@@ -53,7 +75,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
 
         if (table is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{selectStmt.FromStmt.Table}' does not exist.");
+            return _errorHandler.TableDoesNotExist(selectStmt.FromStmt.Table);
         }
 
         List<DatabaseColumn> columnsResult = table.Columns
@@ -68,8 +90,8 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         {
             var isDigit = int.TryParse(limitStmt.Count, out int count);
             if (!isDigit || count < 0) 
-            { 
-                return QueryResult<List<DatabaseRow>>.Err($"'{limitStmt.Count}' is not valid in this expression.");
+            {
+                return _errorHandler.InvalidExpression(limitStmt.Count);
             }
 
             rows = rows.Take(count).ToList();
@@ -102,10 +124,12 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
 
     private QueryResult<List<DatabaseRow>> ExecuteCreateTableStmt(CreateTableStatement createStmt)
     {
+        if (ActiveDbIsNull()) return _errorHandler.NoActiveDbSelected();
+
         var tableExists = GetTable(createStmt.TableName) is not null;
         if (tableExists)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{createStmt.TableName}' already exists.");
+            return _errorHandler.TableAlreadyExists(createStmt.TableName);
         }
 
         List<DatabaseColumn> columns = [];
@@ -126,10 +150,12 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
 
     private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertIntoStatement insertStmt)
     {
+        if (ActiveDbIsNull()) return _errorHandler.NoActiveDbSelected();
+
         var table = GetTable(insertStmt.TableName);
         if (table is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{insertStmt.TableName}' does not exist.");
+            return _errorHandler.TableDoesNotExist(insertStmt.TableName);
         }
 
         var dbRow = _rowFactory.Create([]);
@@ -142,6 +168,11 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
 
             if (columnIndex >= 0)
             {
+                if (!IsDataTypeMatch(column.DataType, insertStmt.Values[columnIndex].Type)) 
+                {
+                    return ExecutionError($"cannot insert data of type '{insertStmt.Values[columnIndex].Type}' into cell row of type '{column.DataType}'.");
+                }
+
                 var value = insertStmt.Values[columnIndex];
                 dbRow.Values[column.Title] = value.Literal;
             }
@@ -156,13 +187,14 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
     }
 
-
     private QueryResult<List<DatabaseRow>> ExecuteDropTableStmt(DropTableStatement dropStmt)
     {
+        if (ActiveDbIsNull()) return _errorHandler.NoActiveDbSelected();
+
         var table = GetTable(dropStmt.TableName);
         if (table is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{dropStmt.TableName}' does not exist.");
+            return _errorHandler.TableDoesNotExist(dropStmt.TableName);
         }
 
         // creates a new reference to the table before it is deleted
@@ -176,10 +208,12 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
 
     private QueryResult<List<DatabaseRow>> ExecuteAlterTableStmt(AlterTableStatement alterStmt)
     {
+        if (ActiveDbIsNull()) return _errorHandler.NoActiveDbSelected();
+
         var table = GetTable(alterStmt.TableName);
         if (table is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{alterStmt.TableName}' does not exist.");
+            return _errorHandler.TableDoesNotExist(alterStmt.TableName);
         }
 
         var result = alterStmt switch
@@ -189,6 +223,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
             _ when alterStmt is RenameColumnStatement renameColumn => ExecuteRenameColumnStmt(renameColumn, table),
             _ when alterStmt is RenameTableStatement renameTable => ExecuteRenameTableStmt(renameTable, table),
             _ when alterStmt is AlterColumnStatement alterColumn => ExecuteAlterColumnStmt(alterColumn, table),
+            _ => _errorHandler.UnknownExpression(alterStmt.ToString() ?? "")
         };
 
         return result;
@@ -198,7 +233,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
     {
         if (table.HasColumn(addColumnStmt.ColumnName)) 
         {
-            return QueryResult<List<DatabaseRow>>.Err($"column '{addColumnStmt.ColumnName}' already exists.");
+            return _errorHandler.ColumnAlreadyExists(addColumnStmt.ColumnName);
         }
 
         var column = _columnFactory.Create(addColumnStmt.ColumnName, addColumnStmt.DataType);
@@ -212,7 +247,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var column = table.GetColumn(dropColumnStmt.ColumnName);
         if (column is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"column '{dropColumnStmt.ColumnName}' does not exist.");
+            return _errorHandler.ColumnDoesNotExist(dropColumnStmt.ColumnName);
         }
 
         table.Columns.Remove(column);
@@ -225,7 +260,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var column = table.GetColumn(renameColumnStmt.OldColumnName);
         if (column is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"Column '{renameColumnStmt.OldColumnName}' does not exist.");
+            return _errorHandler.ColumnDoesNotExist(renameColumnStmt.OldColumnName);
         }
 
         column.Title = renameColumnStmt.NewColumnName;
@@ -248,7 +283,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var tableExists = GetTable(renameTableStmt.TableName) is not null;
         if (!tableExists)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{renameTableStmt.TableName}' does not exists.");
+            return _errorHandler.TableDoesNotExist(renameTableStmt.TableName);
         }
 
         table.Name = renameTableStmt.NewTableName;
@@ -261,7 +296,7 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
         var column = table.GetColumn(alterColumnStmt.ColumnName);
         if (column is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"column '{alterColumnStmt.ColumnName}' does not exist.");
+            return _errorHandler.ColumnDoesNotExist(alterColumnStmt.ColumnName);
         }
 
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
@@ -269,19 +304,16 @@ public sealed class SqlEngine(List<SqlStatement> statements, List<DatabaseTable>
 
     private QueryResult<List<DatabaseRow>> ExecuteDeleteFromStmt(DeleteFromStmt deleteFromStmt)
     {
+        if (ActiveDbIsNull()) return _errorHandler.NoActiveDbSelected();
+
         var table = GetTable(deleteFromStmt.TableName);
         if (table is null)
         {
-            return QueryResult<List<DatabaseRow>>.Err($"table '{deleteFromStmt.TableName}' does not exist.");
+            return _errorHandler.TableDoesNotExist(deleteFromStmt.TableName);
         }
 
         table.Rows.Clear();
 
         return QueryResult<List<DatabaseRow>>.Ok(tableAffected: table);
-    }
-
-    private DatabaseTable? GetTable(string name)
-    {
-        return Tables.FirstOrDefault(x => x.Name == name);
     }
 }

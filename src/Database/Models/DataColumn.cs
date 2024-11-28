@@ -1,6 +1,6 @@
-﻿using lotus.src.Enums;
+﻿using lotus.src.Database.Enums;
 
-namespace lotus.src.Models;
+namespace lotus.src.Database.Models;
 
 public sealed class DatabaseColumn
 {

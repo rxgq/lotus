@@ -1,5 +1,6 @@
 ﻿using lotus.src.Sql.Enums;
 using lotus.src.Sql.Models;
+using System;
 
 namespace lotus.src.Sql.Parser;
 
@@ -28,10 +29,11 @@ public sealed class SqlParser(List<SqlToken> tokens)
             SqlTokenType.Select => ParseSelectStmt(),
             SqlTokenType.Create => ParseCreateStmt(),
             SqlTokenType.Insert => ParseInsertStmt(),
-            SqlTokenType.Drop   => ParseDropTableStmt(),
+            SqlTokenType.Drop   => ParseDropStmt(),
             SqlTokenType.Alter  => ParseAlterStmt(),
             SqlTokenType.Delete => ParseDeleteStmt(),
             SqlTokenType.Where  => ParseWhereStmt(),
+            SqlTokenType.Use    => ParseUseStmt(),
             _ => new BadStatement(Tokens[Current].Literal)
         };
 
@@ -87,9 +89,24 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new FromStatement(identifier.Literal, null);
     }
 
-    private CreateTableStatement ParseCreateStmt()
+    private SqlStatement ParseCreateStmt()
     {
         Expect(SqlTokenType.Create);
+
+        var action = Tokens[Current].Type;
+
+        SqlStatement result = action switch
+        {
+            SqlTokenType.Table => ParseCreateTableStmt(),
+            SqlTokenType.Database => ParseCreateDatabaseStmt(),
+            _ => throw new Exception("")
+        };
+
+        return result;
+    }
+
+    private CreateTableStatement ParseCreateTableStmt() 
+    {
         Expect(SqlTokenType.Table);
 
         var identifier = Tokens[Current].Literal;
@@ -110,6 +127,14 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new CreateTableStatement(identifier, columns);
     }
 
+    private CreateDatabaseStatement ParseCreateDatabaseStmt()
+    {
+        Expect(SqlTokenType.Database);
+
+        var identifier = Tokens[Current].Literal;
+        
+        return new(identifier);
+    }
     private ColumnDeclarationStatement ParseColumnDeclaration()
     {
         var identifier = Tokens[Current].Literal;
@@ -162,10 +187,34 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new(tableName, columns, values);
     }
 
+    private SqlStatement ParseDropStmt() 
+    { 
+        Expect(SqlTokenType.Drop);
+
+        var action = Tokens[Current].Type;
+
+        SqlStatement result = action switch
+        {
+            SqlTokenType.Table => ParseDropTableStmt(),
+            SqlTokenType.Database => ParseDropDatabaseStmt(),
+            _ => throw new Exception("")
+        };
+
+        return result;
+    }
+
     private DropTableStatement ParseDropTableStmt()
     {
-        Expect(SqlTokenType.Drop);
         Expect(SqlTokenType.Table);
+
+        var identifier = Tokens[Current].Literal;
+
+        return new(identifier);
+    }
+
+    private DropTableStatement ParseDropDatabaseStmt()
+    {
+        Expect(SqlTokenType.Database);
 
         var identifier = Tokens[Current].Literal;
 
@@ -283,6 +332,15 @@ public sealed class SqlParser(List<SqlToken> tokens)
         var count = Tokens[Current].Literal;
 
         return new(count);
+    }
+
+    private UseStmt ParseUseStmt() 
+    {
+        Expect(SqlTokenType.Use);
+
+        var tableName = Tokens[Current].Literal;
+
+        return new(tableName);
     }
 
     private WhereStmt ParseWhereStmt()

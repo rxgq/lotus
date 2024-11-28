@@ -19,6 +19,8 @@ public enum SqlTokenType
     Where,
     Limit,
     Distinct,
+    Use,
+    Database,
     Star,
     Comma,
     SingleQuote,

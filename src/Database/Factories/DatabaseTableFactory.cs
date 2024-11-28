@@ -1,10 +1,10 @@
-﻿using lotus.src.Models;
+﻿using lotus.src.Database.Models;
 
-namespace lotus.src.Factories;
+namespace lotus.src.Database.Factories;
 
 public sealed class DatabaseTableFactory
 {
-    public DatabaseTable Create(string name, List<DatabaseColumn> columns, List<DatabaseRow> rows) 
+    public DatabaseTable Create(string name, List<DatabaseColumn> columns, List<DatabaseRow> rows)
     {
         return new()
         {

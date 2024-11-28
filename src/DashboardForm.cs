@@ -1,6 +1,6 @@
 using lotus.src.Database;
-using lotus.src.Enums;
-using lotus.src.Models;
+using lotus.src.Database.Enums;
+using lotus.src.Database.Models;
 using lotus.src.Sql.Utils;
 using System.Diagnostics;
 using System.Linq;
@@ -18,49 +18,6 @@ public partial class DashboardForm : Form
 
     private void DashboardForm_Load(object sender, EventArgs e)
     {
-        var table = new DatabaseTable()
-        {
-            Name = "flowers",
-            Columns = [
-                new() {
-                    Title = "flower_name",
-                    DataType = DataColumnType.VarChar
-                },
-                new() {
-                    Title = "flower_count",
-                    DataType = DataColumnType.Int
-                }
-            ],
-            Rows = [
-                new() {
-                    Values = new() {
-                        { "flower_name", "aster" },
-                        { "flower_count", 3 },
-                    }
-                },
-                new() {
-                    Values = new() {
-                        { "flower_name", "aster" },
-                        { "flower_count", 4 },
-                    }
-                },
-                new() {
-                    Values = new() {
-                        { "flower_name", "tulip" },
-                        { "flower_count", 8 },
-                    }
-                },
-                new() {
-                    Values = new() {
-                        { "flower_name", "daisy" },
-                        { "flower_count", 8 },
-                    }
-                }
-            ],
-        };
-
-        _engine.CreateTable(table);
-
         InitialiseTreeNodes();
     }
 
@@ -68,34 +25,71 @@ public partial class DashboardForm : Form
     {
         DashboardTreeView.Nodes.Add(new TreeNode()
         {
-            Text = "tables",
-            Name = "tables"
+            Text = "Databases",
+            Name = "Databases"
         });
 
-        foreach (var table in _engine.Tables)
+        foreach (var database in _engine.Databases) 
         {
-            var node = DashboardTreeView.Nodes.Find("tables", false).First();
-
-            node.Nodes.Add(new TreeNode()
+            var dbNode = DashboardTreeView.Nodes.Find("Databases", false).First();
+            dbNode.Nodes.Add(new TreeNode()
             {
-                Text = table.Name
+                Text = "Tables",
+                Name = "Tables"
             });
+
+            foreach (var table in database.Tables)
+            {
+                var node = DashboardTreeView.Nodes.Find("Tables", false).First();
+
+                node.Nodes.Add(new TreeNode()
+                {
+                    Text = table.Name
+                });
+            }
         }
     }
 
-    private void RefreshTables()
+    private void RefreshNodes()
     {
-        var tablesNode = DashboardTreeView.Nodes
-            .Find("tables", false).FirstOrDefault();
-        tablesNode.Nodes.Clear();
+        DashboardTreeView.Nodes.Clear();
 
-        foreach (var table in _engine.Tables)
+        var databasesNode = new TreeNode("Databases")
         {
-            tablesNode.Nodes.Add(new TreeNode() {
-                Text = table.Name
-            });
+            Name = "Databases"
+        };
+
+        foreach (var db in _engine.Databases)
+        {
+            var dbNode = new TreeNode(db.Name)
+            {
+                Name = db.Name
+            };
+
+            var tablesNode = new TreeNode("Tables")
+            {
+                Name = "Tables"
+            };
+
+            foreach (var table in db.Tables)
+            {
+                tablesNode.Nodes.Add(new TreeNode
+                {
+                    Text = table.Name,
+                    Name = table.Name
+                });
+            }
+
+            dbNode.Nodes.Add(tablesNode);
+
+            databasesNode.Nodes.Add(dbNode);
         }
+
+        DashboardTreeView.Nodes.Add(databasesNode);
+
+        databasesNode.Expand();
     }
+
 
     private void ExecuteQueryButton_Click(object sender, EventArgs e)
     {
@@ -104,10 +98,10 @@ public partial class DashboardForm : Form
 
         try
         {
-            var results = _engine.ParseSql(QueryEditorField.Text);
-            RefreshTables();
+            var execResult = _engine.ParseSql(QueryEditorField.Text);
+            RefreshNodes();
 
-            foreach (var result in results)
+            foreach (var result in execResult.Results)
             {
                 QueryResultGrid.Rows.Clear();
                 QueryResultGrid.Columns.Clear();
@@ -135,6 +129,8 @@ public partial class DashboardForm : Form
 
     private void AddColumnsAndRows(QueryResult<List<DatabaseRow>> result)
     {
+        if (result.TableResult is null) return;
+
         foreach (var columnName in result.TableResult.Columns.Select(x => x.Title))
         {
             QueryResultGrid.Columns.Add(columnName, columnName);
@@ -143,17 +139,13 @@ public partial class DashboardForm : Form
         foreach (var row in result.Value ?? [])
         {
             var values = result.TableResult.Columns
-                .Select(column =>
-                {
+                .Select(column => {
                     row.Values.TryGetValue(column.Title, out var value);
                     return value ?? "NULL";
                 })
                 .ToArray();
 
-            if (!values.Contains("NULL"))
-            {
-                QueryResultGrid.Rows.Add(values);
-            }
+            QueryResultGrid.Rows.Add(values);
         }
     }
 

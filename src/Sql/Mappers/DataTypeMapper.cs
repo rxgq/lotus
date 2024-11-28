@@ -1,4 +1,4 @@
-﻿using lotus.src.Enums;
+﻿using lotus.src.Database.Enums;
 
 namespace lotus.src.Sql.Mappers;
 

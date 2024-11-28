@@ -1,13 +1,14 @@
-﻿using lotus.src.Models;
+﻿using lotus.src.Database.Models;
 using lotus.src.Sql.Mappers;
 
-namespace lotus.src.Factories;
+namespace lotus.src.Database.Factories;
 
 public sealed class DatabaseColumnFactory
 {
-    public DatabaseColumn Create(string title, string dataType) 
+    public DatabaseColumn Create(string title, string dataType)
     {
-        return new() {
+        return new()
+        {
             DataType = DataTypeMapper.Map(dataType),
             Title = title
         };

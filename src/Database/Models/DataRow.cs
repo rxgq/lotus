@@ -1,4 +1,4 @@
-﻿namespace lotus.src.Models;
+﻿namespace lotus.src.Database.Models;
 
 public sealed class DatabaseRow
 {

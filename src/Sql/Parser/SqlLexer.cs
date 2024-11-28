@@ -34,6 +34,8 @@ public sealed class SqlLexer(string source)
         { "not",      SqlTokenType.Not },
         { "limit",    SqlTokenType.Limit },
         { "distinct", SqlTokenType.Distinct },
+        { "use",      SqlTokenType.Use },
+        { "database", SqlTokenType.Database },
     };
 
     public List<SqlToken> Tokenize()
