@@ -6,5 +6,6 @@ public enum DataColumnType
     Float,
     VarChar,
     DateStamp,
+    Bool,
     Bad
 }

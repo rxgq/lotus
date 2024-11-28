@@ -41,6 +41,11 @@ public sealed partial class SqlEngine
             return _errorHandler.DatabaseDoesNotExist(dropDbStmt.DatabaseName);
         }
 
+        if (db == DatabaseEngine.ActiveDatabase) 
+        { 
+            return _errorHandler.CannotAlterActiveDatabase();
+        }
+
         DatabaseEngine.Databases.Remove(db);
 
         return QueryResult<List<DatabaseRow>>.Ok(databaseAffected: db);

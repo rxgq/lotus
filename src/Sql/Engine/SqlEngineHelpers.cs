@@ -7,13 +7,14 @@ namespace lotus.src.Sql.Engine;
 
 public sealed partial class SqlEngine
 {
-    private bool IsDataTypeMatch(DataColumnType columnType, SqlTokenType tokenType)
+    private static bool IsDataTypeMatch(DataColumnType columnType, SqlTokenType tokenType)
     {
         Dictionary<DataColumnType, SqlTokenType> DataTypeMap = new()
         {
             { DataColumnType.VarChar, SqlTokenType.String },
-            { DataColumnType.Int, SqlTokenType.Integer },
-            { DataColumnType.Float, SqlTokenType.Float },
+            { DataColumnType.Int,     SqlTokenType.Integer },
+            { DataColumnType.Float,   SqlTokenType.Float },
+            { DataColumnType.Bool,    SqlTokenType.Bool },
         };
 
         return DataTypeMap[columnType] == tokenType;

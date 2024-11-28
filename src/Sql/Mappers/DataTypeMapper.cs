@@ -12,6 +12,7 @@ public static class DataTypeMapper
             "int"         => DataColumnType.Int,
             "float"       => DataColumnType.Float,
             "datestamp"   => DataColumnType.DateStamp,
+            "bool"        => DataColumnType.Bool,
             _             => DataColumnType.Bad
         };
     }

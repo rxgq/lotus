@@ -1,4 +1,6 @@
-﻿using lotus.src.Sql.Enums;
+﻿using lotus.src.Database.Enums;
+using lotus.src.Sql.Enums;
+using lotus.src.Sql.Mappers;
 using lotus.src.Sql.Models;
 using System;
 
@@ -11,7 +13,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
 
     private readonly List<SqlStatement> Statements = [];
 
-    public List<SqlStatement> ParseSql()
+    public List<SqlStatement> ParseStatements()
     {
         while (Current < Tokens.Count)
         {

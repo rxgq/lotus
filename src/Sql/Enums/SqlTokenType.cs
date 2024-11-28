@@ -2,6 +2,7 @@
 
 public enum SqlTokenType
 {
+    // Symbols
     Select,
     From,
     Create,
@@ -21,20 +22,29 @@ public enum SqlTokenType
     Distinct,
     Use,
     Database,
+
+    // Symbols
     Star,
     Comma,
     SingleQuote,
     LeftParen,
     RightParen,
-    Identifier,
+
+    // Logical
     LessThan,
     GreaterThan,
     Equals,
     And,
     Or,
     Not,
+
+    // Data types
     String,
     Integer,
     Float,
+    Bool,
+
+    // Misc
+    Identifier,
     WhiteSpace
 }

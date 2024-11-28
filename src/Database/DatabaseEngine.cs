@@ -16,10 +16,10 @@ public sealed class DatabaseEngine
         var tokens = lexer.Tokenize();
 
         var parser = new SqlParser(tokens);
-        var statements = parser.ParseSql();
+        var statements = parser.ParseStatements();
 
-        var sqlEngine = new SqlEngine(statements, this);
-        var results = sqlEngine.ExecuteStatements();
+        var sql = new SqlEngine(statements, this);
+        var results = sql.ExecuteStatements();
 
         return results;
     }

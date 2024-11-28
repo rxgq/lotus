@@ -64,6 +64,13 @@ public sealed class SqlErrorHandler(List<string> errors)
         Errors.Add(message);
         return QueryResult<List<DatabaseRow>>.Err(message);
     }
+    public QueryResult<List<DatabaseRow>> CannotAlterActiveDatabase()
+    {
+        var message = $"Cannot alter active database.";
+
+        Errors.Add(message);
+        return QueryResult<List<DatabaseRow>>.Err(message);
+    }
 
     public QueryResult<List<DatabaseRow>> DatabaseAlreadyExists(string database)
     {
@@ -76,6 +83,14 @@ public sealed class SqlErrorHandler(List<string> errors)
     public QueryResult<List<DatabaseRow>> NoActiveDbSelected()
     {
         var message = $"No active database is currently selected.";
+
+        Errors.Add(message);
+        return QueryResult<List<DatabaseRow>>.Err(message);
+    }
+
+    public QueryResult<List<DatabaseRow>> NotAValidDatatype(string type)
+    {
+        var message = $"Identifier '{type}' is not a valid data type.";
 
         Errors.Add(message);
         return QueryResult<List<DatabaseRow>>.Err(message);

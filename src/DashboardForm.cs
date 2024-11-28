@@ -18,7 +18,38 @@ public partial class DashboardForm : Form
 
     private void DashboardForm_Load(object sender, EventArgs e)
     {
-        InitialiseTreeNodes();
+        try
+        {
+            InitialiseTreeNodes();
+
+            _engine.ParseSql("""
+                create database garden
+                use garden
+
+                create table flowers (
+                    flower_name varchar,
+                    flower_count int,
+                    is_available bool,
+                    date_added datestamp
+                )
+
+                insert into flowers (flower_name, flower_count)
+                values ('tulip', 1)
+
+                select * from flowers
+            """);
+
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Error during initialization: {ex.Message}", "Initialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+
+    private TreeNode GetNode(string name)
+    {
+        return DashboardTreeView.Nodes.Find(name, false).First();
     }
 
     private void InitialiseTreeNodes()
@@ -29,9 +60,9 @@ public partial class DashboardForm : Form
             Name = "Databases"
         });
 
-        foreach (var database in _engine.Databases) 
+        foreach (var database in _engine.Databases)
         {
-            var dbNode = DashboardTreeView.Nodes.Find("Databases", false).First();
+            var dbNode = GetNode("Databases");
             dbNode.Nodes.Add(new TreeNode()
             {
                 Text = "Tables",
@@ -40,7 +71,7 @@ public partial class DashboardForm : Form
 
             foreach (var table in database.Tables)
             {
-                var node = DashboardTreeView.Nodes.Find("Tables", false).First();
+                var node = GetNode("Tables");
 
                 node.Nodes.Add(new TreeNode()
                 {
@@ -50,47 +81,6 @@ public partial class DashboardForm : Form
         }
     }
 
-    private void RefreshNodes()
-    {
-        DashboardTreeView.Nodes.Clear();
-
-        var databasesNode = new TreeNode("Databases")
-        {
-            Name = "Databases"
-        };
-
-        foreach (var db in _engine.Databases)
-        {
-            var dbNode = new TreeNode(db.Name)
-            {
-                Name = db.Name
-            };
-
-            var tablesNode = new TreeNode("Tables")
-            {
-                Name = "Tables"
-            };
-
-            foreach (var table in db.Tables)
-            {
-                tablesNode.Nodes.Add(new TreeNode
-                {
-                    Text = table.Name,
-                    Name = table.Name
-                });
-            }
-
-            dbNode.Nodes.Add(tablesNode);
-
-            databasesNode.Nodes.Add(dbNode);
-        }
-
-        DashboardTreeView.Nodes.Add(databasesNode);
-
-        databasesNode.Expand();
-    }
-
-
     private void ExecuteQueryButton_Click(object sender, EventArgs e)
     {
         var stopwatch = new Stopwatch();
@@ -99,7 +89,6 @@ public partial class DashboardForm : Form
         try
         {
             var execResult = _engine.ParseSql(QueryEditorField.Text);
-            RefreshNodes();
 
             foreach (var result in execResult.Results)
             {
@@ -139,7 +128,8 @@ public partial class DashboardForm : Form
         foreach (var row in result.Value ?? [])
         {
             var values = result.TableResult.Columns
-                .Select(column => {
+                .Select(column =>
+                {
                     row.Values.TryGetValue(column.Title, out var value);
                     return value ?? "NULL";
                 })
@@ -149,4 +139,41 @@ public partial class DashboardForm : Form
         }
     }
 
+    private void RefreshButton_Click(object sender, EventArgs e)
+    {
+        DashboardTreeView.Nodes.Clear();
+
+        var databasesNode = new TreeNode("Databases")
+        {
+            Name = "Databases"
+        };
+
+        foreach (var db in _engine.Databases)
+        {
+            var dbNode = new TreeNode(db.Name)
+            {
+                Name = db.Name
+            };
+
+            var tablesNode = new TreeNode("Tables")
+            {
+                Name = "Tables"
+            };
+
+            foreach (var table in db.Tables)
+            {
+                tablesNode.Nodes.Add(new TreeNode
+                {
+                    Text = table.Name,
+                    Name = table.Name
+                });
+            }
+
+            dbNode.Nodes.Add(tablesNode);
+            databasesNode.Nodes.Add(dbNode);
+        }
+
+        DashboardTreeView.Nodes.Add(databasesNode);
+        databasesNode.Expand();
+    }
 }

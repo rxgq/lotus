@@ -63,8 +63,7 @@ public sealed class SqlLexer(string source)
             '<'  => NewToken(SqlTokenType.LessThan, "<"),
             '>'  => NewToken(SqlTokenType.GreaterThan, ">"),
             '='  => NewToken(SqlTokenType.Equals, "="),
-            ' '  => null,
-            '\n' => null,
+            '\n' or '\r' or ' ' => null,
             _    => throw new Exception($"Unknown token: >{Source[Current]}<")
         };
 
