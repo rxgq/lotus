@@ -1,9 +1,11 @@
 using lotus.src.Database;
 using lotus.src.Database.Enums;
 using lotus.src.Database.Models;
+using lotus.src.Sql.Enums;
 using lotus.src.Sql.Utils;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace lotus;
 
@@ -14,6 +16,7 @@ public partial class DashboardForm : Form
     public DashboardForm()
     {
         InitializeComponent();
+        QueryEditorField.TextChanged += HighlightKeywordsInQuery;
     }
 
     private void DashboardForm_Load(object sender, EventArgs e)
@@ -175,5 +178,99 @@ public partial class DashboardForm : Form
 
         DashboardTreeView.Nodes.Add(databasesNode);
         databasesNode.Expand();
+    }
+
+    private readonly Dictionary<string, SqlTokenType> Keywords = new() {
+        { "select",   SqlTokenType.Select },
+        { "from",     SqlTokenType.From },
+        { "create",   SqlTokenType.Create },
+        { "table",    SqlTokenType.Table },
+        { "insert",   SqlTokenType.Insert },
+        { "into",     SqlTokenType.Into },
+        { "values",   SqlTokenType.Values },
+        { "drop",     SqlTokenType.Drop },
+        { "alter",    SqlTokenType.Alter },
+        { "column",   SqlTokenType.Column },
+        { "add",      SqlTokenType.Add },
+        { "rename",   SqlTokenType.Rename },
+        { "to",       SqlTokenType.To },
+        { "delete",   SqlTokenType.Delete },
+        { "where",    SqlTokenType.Where },
+        { "and",      SqlTokenType.And },
+        { "or",       SqlTokenType.Or },
+        { "not",      SqlTokenType.Not },
+        { "limit",    SqlTokenType.Limit },
+        { "distinct", SqlTokenType.Distinct },
+        { "use",      SqlTokenType.Use },
+        { "database", SqlTokenType.Database },
+    };
+
+    private void HighlightKeywordsInQuery(object sender, EventArgs e)
+    {
+        var keywordsBlue = new[] {
+            "SELECT", "FROM", "CREATE", "TABLE", "INSERT", "INTO", "VALUES", "DROP", "ALTER",
+            "COLUMN", "ADD", "RENAME", "TO", "DELETE", "WHERE", "AND", "OR", "NOT", "LIMIT",
+            "DISTINCT", "USE", "DATABASE"
+        };
+
+        var keywordsPurple = new[] {
+            "VARCHAR", "INT", "BOOL", "DATESTAMP", "FLOAT"
+        };
+
+        int originalSelectionStart = QueryEditorField.SelectionStart;
+        int originalSelectionLength = QueryEditorField.SelectionLength;
+
+        QueryEditorField.SelectAll();
+        QueryEditorField.SelectionColor = Color.Black;
+        QueryEditorField.SelectionBackColor = Color.White;
+
+        var regexLiterals = new Regex(@"'([^']*)'", RegexOptions.IgnoreCase);
+        foreach (Match match in regexLiterals.Matches(QueryEditorField.Text))
+        {
+            QueryEditorField.Select(match.Index, match.Length);
+            QueryEditorField.SelectionColor = Color.Green;
+        }
+
+        foreach (var keyword in keywordsBlue)
+        {
+            var regex = new Regex($@"\b{Regex.Escape(keyword)}\b", RegexOptions.IgnoreCase);
+
+            foreach (Match match in regex.Matches(QueryEditorField.Text))
+            {
+                if (!IsInsideStringLiteral(match.Index, regexLiterals))
+                {
+                    QueryEditorField.Select(match.Index, match.Length);
+                    QueryEditorField.SelectionColor = Color.Blue;
+                }
+            }
+        }
+
+        foreach (var keyword in keywordsPurple)
+        {
+            var regex = new Regex($@"\b{Regex.Escape(keyword)}\b", RegexOptions.IgnoreCase);
+
+            foreach (Match match in regex.Matches(QueryEditorField.Text))
+            {
+                if (!IsInsideStringLiteral(match.Index, regexLiterals))
+                {
+                    QueryEditorField.Select(match.Index, match.Length);
+                    QueryEditorField.SelectionColor = Color.Purple;
+                }
+            }
+        }
+
+        QueryEditorField.Select(originalSelectionStart, originalSelectionLength);
+    }
+
+    private bool IsInsideStringLiteral(int position, Regex literalRegex)
+    {
+        foreach (Match literalMatch in literalRegex.Matches(QueryEditorField.Text))
+        {
+            if (position >= literalMatch.Index && position < literalMatch.Index + literalMatch.Length)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
