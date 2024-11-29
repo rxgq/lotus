@@ -1,10 +1,16 @@
 ## Lotus DBMS
 
-Lotus is a very lightweight, unfinished, relational database management solution written in C#, WinForms.
+Lotus is a very lightweight, unfinished, relational database management solution written in C# and designed for educational purposes.
+<br/>
+<br/>
+
+![image](https://github.com/user-attachments/assets/69f5dd27-880c-4637-9dfd-dc87fc57938d)
+
 
 <br/>
 
 ### Todo
+- [ ] Data Storage
 - [ ] SQL Engine
       
   - [x] Select (From)
