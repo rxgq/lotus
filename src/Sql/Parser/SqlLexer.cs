@@ -36,6 +36,9 @@ public sealed class SqlLexer(string source)
         { "distinct", SqlTokenType.Distinct },
         { "use",      SqlTokenType.Use },
         { "database", SqlTokenType.Database },
+        { "true",     SqlTokenType.True },
+        { "false",    SqlTokenType.False },
+        { "like",     SqlTokenType.Like },
     };
 
     public List<SqlToken> Tokenize()
@@ -60,9 +63,10 @@ public sealed class SqlLexer(string source)
             ','  => NewToken(SqlTokenType.Comma, ","),
             '('  => NewToken(SqlTokenType.LeftParen, "("),
             ')'  => NewToken(SqlTokenType.RightParen, ")"),
-            '<'  => NewToken(SqlTokenType.LessThan, "<"),
-            '>'  => NewToken(SqlTokenType.GreaterThan, ">"),
+            '<'  => Peek() == '=' ? NewToken(SqlTokenType.LessThanEq, "<=") : NewToken(SqlTokenType.LessThan, "<"),
+            '>'  => Peek() == '=' ? NewToken(SqlTokenType.GreaterThanEq, ">=") : NewToken(SqlTokenType.GreaterThan, ">"),
             '='  => NewToken(SqlTokenType.Equals, "="),
+            '!'  => Peek() == '=' ? NewToken(SqlTokenType.NotEquals, "!=") : NewToken(SqlTokenType.Exclamation, "!"),
             '\n' or '\r' or ' ' => null,
             _    => throw new Exception($"Unknown token: >{Source[Current]}<")
         };
@@ -137,5 +141,9 @@ public sealed class SqlLexer(string source)
         Current--;
 
         return token;
+    }
+
+    private char Peek() {
+        return Current < Source.Length ? Source[++Current] : '\0'; 
     }
 }

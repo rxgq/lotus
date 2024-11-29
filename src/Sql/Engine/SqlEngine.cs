@@ -68,10 +68,11 @@ public sealed partial class SqlEngine
 
     private QueryResult<List<DatabaseRow>> ExecuteSelectStmt(SelectStatement selectStmt)
     {
+        if (ActiveDbIsNull()) return _errorHandler.NoActiveDbSelected();
+
         var columns = selectStmt.Values.ToList();
 
         var table = GetTable(selectStmt.FromStmt.Table);
-        Current++;
 
         if (table is null)
         {
@@ -83,16 +84,12 @@ public sealed partial class SqlEngine
         if (columns[0] == "*") columnsResult = table.Columns;
 
         List<DatabaseRow> rows = table.Rows;
-        var tableResult = _tableFactory.Create(table.Name, columnsResult, rows);
 
         var limitStmt = selectStmt.FromStmt.LimitStmt;
-        if (limitStmt is not null) 
+        if (limitStmt is not null)
         {
             var isDigit = int.TryParse(limitStmt.Count, out int count);
-            if (!isDigit || count < 0) 
-            {
-                return _errorHandler.InvalidExpression(limitStmt.Count);
-            }
+            if (!isDigit || count < 0) return _errorHandler.InvalidExpression(limitStmt.Count);
 
             rows = rows.Take(count).ToList();
         }
@@ -118,8 +115,63 @@ public sealed partial class SqlEngine
             rows = rowsToKeep;
         }
 
+        if (selectStmt.WhereStmt is not null)
+        {
+            rows = rows.Where(row => ExecuteWhereCondition(row, columnsResult, selectStmt.WhereStmt)).ToList();
+        }
+
+        var tableResult = _tableFactory.Create(table.Name, columnsResult, rows);
 
         return QueryResult<List<DatabaseRow>>.Ok(rows, tableAffected: tableResult);
+    }
+
+    private bool ExecuteWhereCondition(DatabaseRow row, List<DatabaseColumn> columns, WhereStatement where)
+    {
+        return EvaluateExpression(row, where.Condition);
+    }
+
+    private bool EvaluateExpression(DatabaseRow row, Expression expr)
+    {
+        switch (expr)
+        {
+            case BinaryExpression binaryExpr:
+                var left = EvaluateExpression(row, binaryExpr.Left);
+                var right = EvaluateExpression(row, binaryExpr.Right);
+
+                return binaryExpr.Operator.ToLower() switch
+                {
+                    "and" => left && right,
+                    "or" => left || right,
+                    _ => throw new InvalidOperationException($"Unsupported operator: {binaryExpr.Operator}")
+                };
+
+            case ComparisonExpression compExpr:
+                if (!row.Values.TryGetValue(compExpr.Column, out var actualValue))
+                    actualValue = null;
+
+                return EvaluateCondition(actualValue?.ToString(), compExpr.Operator, compExpr.Value);
+
+            case LiteralExpression literalExpr:
+                return bool.TryParse(literalExpr.Value, out var result) && result;
+
+            default:
+                throw new InvalidOperationException($"Unsupported expression type: {expr.GetType().Name}");
+        }
+    }
+
+    private static bool EvaluateCondition(string? actualValue, string op, string expectedValue)
+    {
+        return op.ToLower() switch
+        {
+            "="    => actualValue == expectedValue,
+            "!="   => actualValue != expectedValue,
+            "<"    => double.TryParse(actualValue, out var av) && double.TryParse(expectedValue, out var ev) && av < ev,
+            ">"    => double.TryParse(actualValue, out var av) && double.TryParse(expectedValue, out var ev) && av > ev,
+            "<="   => double.TryParse(actualValue, out var av) && double.TryParse(expectedValue, out var ev) && av <= ev,
+            ">="   => double.TryParse(actualValue, out var av) && double.TryParse(expectedValue, out var ev) && av >= ev,
+            "like" => actualValue?.Contains(expectedValue, StringComparison.OrdinalIgnoreCase) ?? false,
+            _      => throw new InvalidOperationException($"Unsupported operator: {op}")
+        };
     }
 
     private QueryResult<List<DatabaseRow>> ExecuteInsertStmt(InsertIntoStatement insertStmt)

@@ -22,6 +22,7 @@ public enum SqlTokenType
     Distinct,
     Use,
     Database,
+    Like,
 
     // Symbols
     Star,
@@ -29,11 +30,15 @@ public enum SqlTokenType
     SingleQuote,
     LeftParen,
     RightParen,
+    Exclamation,
 
     // Logical
     LessThan,
+    LessThanEq,
     GreaterThan,
+    GreaterThanEq,
     Equals,
+    NotEquals,
     And,
     Or,
     Not,
@@ -46,5 +51,7 @@ public enum SqlTokenType
 
     // Misc
     Identifier,
+    True,
+    False,
     WhiteSpace
 }

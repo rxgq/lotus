@@ -9,16 +9,17 @@ public sealed partial class SqlEngine
 {
     private static bool IsDataTypeMatch(DataColumnType columnType, SqlTokenType tokenType)
     {
-        Dictionary<DataColumnType, SqlTokenType> DataTypeMap = new()
+        Dictionary<DataColumnType, HashSet<SqlTokenType>> DataTypeMap = new()
         {
-            { DataColumnType.VarChar, SqlTokenType.String },
-            { DataColumnType.Int,     SqlTokenType.Integer },
-            { DataColumnType.Float,   SqlTokenType.Float },
-            { DataColumnType.Bool,    SqlTokenType.Bool },
+            { DataColumnType.VarChar, new HashSet<SqlTokenType> { SqlTokenType.String } },
+            { DataColumnType.Int,     new HashSet<SqlTokenType> { SqlTokenType.Integer } },
+            { DataColumnType.Float,   new HashSet<SqlTokenType> { SqlTokenType.Float } },
+            { DataColumnType.Bool,    new HashSet<SqlTokenType> { SqlTokenType.True, SqlTokenType.False } },
         };
 
-        return DataTypeMap[columnType] == tokenType;
+        return DataTypeMap.TryGetValue(columnType, out var validTokens) && validTokens.Contains(tokenType);
     }
+
 
     private QueryResult<List<DatabaseRow>> ExecutionError(string message)
     {

@@ -33,11 +33,22 @@ public partial class DashboardForm : Form
                     flower_name varchar,
                     flower_count int,
                     is_available bool,
-                    date_added datestamp
                 )
 
-                insert into flowers (flower_name, flower_count)
-                values ('tulip', 1)
+                insert into flowers (flower_name, flower_count, is_available)
+                values ('tulip', 5, false)
+
+                insert into flowers (flower_name, flower_count, is_available)
+                values ('daisy', 8, true)
+            
+                insert into flowers (flower_name, flower_count, is_available)
+                values ('aster', 0, true)
+            
+                insert into flowers (flower_name, flower_count, is_available)
+                values ('bluebell', 3, false)
+
+                insert into flowers (flower_name, flower_count, is_available)
+                values ('rose', 4, true)
 
                 select * from flowers
             """);
