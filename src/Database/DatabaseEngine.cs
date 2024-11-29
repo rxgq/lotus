@@ -15,6 +15,10 @@ public sealed class DatabaseEngine
         var lexer = new SqlLexer(source);
         var tokens = lexer.Tokenize();
 
+        if (lexer.LexerErrors.Count > 0) {
+            return new(null!, lexer.LexerErrors);
+        }
+
         var parser = new SqlParser(tokens);
         var statements = parser.ParseStatements();
 

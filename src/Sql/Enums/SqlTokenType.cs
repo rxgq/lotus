@@ -53,5 +53,6 @@ public enum SqlTokenType
     Identifier,
     True,
     False,
-    WhiteSpace
+    WhiteSpace,
+    Bad
 }

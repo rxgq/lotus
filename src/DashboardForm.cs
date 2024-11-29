@@ -97,12 +97,19 @@ public partial class DashboardForm : Form
 
     private void ExecuteQueryButton_Click(object sender, EventArgs e)
     {
+        if (QueryEditorField.Text == "") return;
+
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         try
         {
             var execResult = _engine.ParseSql(QueryEditorField.Text);
+            if (execResult.Results is null) 
+            {
+                QueryResultTabMessagesLabel.Text = execResult.ExecutionErrors[0];
+                return;
+            }
 
             foreach (var result in execResult.Results)
             {
