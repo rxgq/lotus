@@ -17,7 +17,7 @@ Lotus is a very lightweight, unfinished, relational database management solution
     - [x] *
     - [x] Distinct
     - [x] Specific columns
-  - [ ] Where 
+  - [x] Where 
           
   - [ ] Insert 
     - [x] Insert Into, Values
@@ -25,9 +25,9 @@ Lotus is a very lightweight, unfinished, relational database management solution
   
   - [ ] Update (Set) 
      
-  - [ ] Create
+  - [x] Create
     - [x] Table
-    - [ ] Database
+    - [x] Database
        
   - [ ] Alter
     - [x] Table
@@ -38,9 +38,9 @@ Lotus is a very lightweight, unfinished, relational database management solution
       - [ ] Rename Table
     - [ ] Database
      
-  - [ ] Drop
+  - [x] Drop
     - [x] Table
-    - [ ] Database
+    - [x] Database
        
   - [x] Delete
     - [x] From Table
