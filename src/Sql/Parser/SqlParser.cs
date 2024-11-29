@@ -34,7 +34,6 @@ public sealed class SqlParser(List<SqlToken> tokens)
             SqlTokenType.Drop   => ParseDropStmt(),
             SqlTokenType.Alter  => ParseAlterStmt(),
             SqlTokenType.Delete => ParseDeleteStmt(),
-            SqlTokenType.Where  => ParseWhereStmt(),
             SqlTokenType.Use    => ParseUseStmt(),
             _ => new BadStatement(Tokens[Current].Literal)
         };
@@ -68,7 +67,12 @@ public sealed class SqlParser(List<SqlToken> tokens)
         Advance();
         var fromStmt = ParseFromStmt();
 
-        return new SelectStatement(values, fromStmt, isDistinct);
+        WhereStatement? whereStmt = null;
+        if (Match(SqlTokenType.Where)) {
+            whereStmt = ParseWhereStmt();
+        }
+
+        return new SelectStatement(values, fromStmt, whereStmt, isDistinct);
     }
 
     private FromStatement ParseFromStmt()
@@ -214,7 +218,7 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new(identifier);
     }
 
-    private DropTableStatement ParseDropDatabaseStmt()
+    private DropDatabaseStatement ParseDropDatabaseStmt()
     {
         Expect(SqlTokenType.Database);
 
@@ -345,23 +349,23 @@ public sealed class SqlParser(List<SqlToken> tokens)
         return new(tableName);
     }
 
-    private WhereStmt ParseWhereStmt()
+    private WhereStatement ParseWhereStmt()
     {
         Expect(SqlTokenType.Where);
 
         var condition = ParseExpression();
-        return new WhereStmt(condition);
+        return new WhereStatement(condition);
     }
 
     private Expression ParseExpression()
     {
         var left = ParsePrimary();
 
-        while (IsLogicalOperator(Tokens[Current].Type) || IsComparisonOperator(Tokens[Current].Type)) 
+        while (Current < Tokens.Count && IsLogicalOperator(Tokens[Current].Type) || IsComparisonOperator(Tokens[Current].Type)) 
         { 
             var op = Tokens[Current].Literal;
             Advance();
-
+            
             var right = ParsePrimary();
             left = new BinaryExpression(left, op, right);
         }

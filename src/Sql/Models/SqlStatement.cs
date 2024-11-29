@@ -4,10 +4,11 @@ public abstract class SqlStatement
 {
 }
 
-public sealed class SelectStatement(List<string> values, FromStatement fromStmt, bool isDistinct) : SqlStatement
+public sealed class SelectStatement(List<string> values, FromStatement fromStmt, WhereStatement? whereStmt, bool isDistinct) : SqlStatement
 {
     public List<string> Values { get; set; } = values;
     public FromStatement FromStmt { get; set; } = fromStmt;
+    public WhereStatement? WhereStmt { get; set; } = whereStmt;
     public bool IsDistinct { get; set; } = isDistinct;
 }
 
@@ -100,7 +101,7 @@ public sealed class UseStmt(string databaseName) : SqlStatement
     public string DatabaseName { get; set; } = databaseName;
 }
 
-public sealed class WhereStmt(Expression condition) : SqlStatement
+public sealed class WhereStatement(Expression condition) : SqlStatement
 {
     public Expression Condition { get; set; } = condition;
 }
